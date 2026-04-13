@@ -3,365 +3,160 @@
 <head> 
     <meta charset="UTF-8"> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>Lista Orbe - Control de Asistencia</title> 
+    <title>Orbe Cloud - Panel Realtime</title> 
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> 
     <style> 
-        :root { 
-            --bg-color: #f4f4f9; 
-            --text-color: #333; 
-            --card-bg: #fff; 
-            --primary: #0056b3; 
-            --primary-hover: #004494; 
-            --success: #28a745; 
-            --danger: #dc3545; 
-            --border: #ccc; 
-        } 
-
-        @media (prefers-color-scheme: dark) { 
-            :root { 
-                --bg-color: #121212; 
-                --text-color: #e0e0e0; 
-                --card-bg: #1e1e1e; 
-                --primary: #4dabf7; 
-                --primary-hover: #3bc9db; 
-                --success: #2b8a3e; 
-                --danger: #c92a2a; 
-                --border: #333; 
-            } 
-        } 
-
-        body { 
-            font-family: -apple-system, system-ui, sans-serif; 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            margin: 0; 
-            padding: 15px; 
-        } 
-
-        .container { max-width: 600px; margin: 0 auto; } 
-        h1, h3 { text-align: center; margin-bottom: 10px; } 
-
-        .card { 
-            background-color: var(--card-bg); 
-            padding: 15px; 
-            border-radius: 12px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
-            margin-bottom: 20px; 
-        } 
-
-        .form-group { margin-bottom: 12px; } 
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; } 
-
-        input, select, textarea { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1px solid var(--border); 
-            border-radius: 8px; 
-            box-sizing: border-box; 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-        } 
-
-        .radio-group { display: flex; gap: 10px; } 
-        .radio-group label { flex: 1; text-align: center; padding: 10px; background: var(--bg-color); border-radius: 8px; cursor: pointer; border: 1px solid var(--border); } 
-        .radio-group input { display: none; } 
-        .radio-group input:checked + span { color: var(--primary); font-weight: bold; } 
-
-        button { 
-            width: 100%; 
-            padding: 14px; 
-            border: none; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-size: 16px; 
-            font-weight: bold; 
-            transition: 0.2s; 
-        } 
-
-        .btn-main { background-color: var(--primary); color: white; margin-top: 10px; } 
-        .btn-success { background-color: var(--success); color: white; } 
-        .btn-import { background-color: #6f42c1; color: white; margin-top: 10px; } 
-          
-        .stats { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; } 
-        .stat-box { background: var(--card-bg); padding: 10px; border-radius: 10px; flex: 1; text-align: center; font-size: 0.8em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); } 
-        .stat-box b { font-size: 1.4em; display: block; } 
-
-        .worker-item { 
-            background-color: var(--card-bg); 
-            padding: 15px; 
-            border-radius: 12px; 
-            margin-bottom: 12px; 
-            border-left: 6px solid var(--border); 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-        } 
-        .worker-item.present { border-left-color: var(--success); } 
-        .worker-item.absent { border-left-color: var(--danger); } 
-
-        .item-row { display: flex; justify-content: space-between; align-items: flex-start; } 
-          
-        .btn-group-toggle { display: flex; gap: 5px; } 
-        .btn-toggle { 
-            padding: 8px 12px; 
-            font-size: 0.8em; 
-            background: var(--bg-color); 
-            color: var(--text-color); 
-            border: 1px solid var(--border); 
-        } 
-        .btn-toggle.active-p { background: var(--success); color: white; border-color: var(--success); } 
-        .btn-toggle.active-a { background: var(--danger); color: white; border-color: var(--danger); } 
-
-        .btn-delete { background: none; color: var(--danger); width: auto; padding: 5px; font-size: 1.2em; } 
-          
-        #fileInput { display: none; } 
-    </style> 
+        :root { --bg: #f0f2f5; --primary: #0078d4; --card: #ffffff; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; } 
+        .container { max-width: 500px; margin: 0 auto; display: none; }
+        #loginScreen { max-width: 350px; margin: 80px auto; text-align: center; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); } 
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-send { background: #107c10; color: white; }
+        .worker-item { background: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; display: flex; justify-content: space-between; align-items: center; }
+    </style>
 </head> 
 <body> 
- 
-<div class="container"> 
-    <h1>Lista Orbe</h1> 
- 
-    <div class="card"> 
-        <label>Obra Activa:</label> 
-        <div style="display: flex; gap: 8px;"> 
-            <select id="projectSelect" onchange="changeProject()"></select> 
-            <button onclick="addProject()" style="width: auto; padding: 0 15px;">+</button> 
-        </div> 
-    </div> 
- 
-    <div class="stats"> 
-        <div class="stat-box">Total<br><b id="countTotal">0</b></div> 
-        <div class="stat-box" style="color: var(--success);">Presentes<br><b id="countPresent">0</b></div> 
-        <div class="stat-box" style="color: var(--danger);">Ausentes<br><b id="countAbsent">0</b></div> 
-    </div> 
- 
-    <div class="card"> 
-        <h3>Nuevo Trabajador</h3> 
-        <form id="workerForm"> 
-            <input type="text" id="name" placeholder="Nombre completo" required class="form-group"> 
-            <label for="dni">DNI/NIE</label>
-            <input type="text" id="dni" placeholder="DNI / NIE" class="form-group"> 
-            <input type="date" id="date" required class="form-group"> 
-             
-            <div class="form-group radio-group"> 
-                <label><input type="radio" name="attendance" value="Presente" checked><span>Presente</span></label> 
-                <label><input type="radio" name="attendance" value="Ausente"><span>Ausente</span></label> 
-            </div> 
 
-            <textarea id="obs" placeholder="Observaciones..." rows="2" class="form-group"></textarea> 
-             
-            <label style="display: flex; align-items: center; gap: 10px; font-weight: normal;"> 
-                <input type="checkbox" id="isNew" style="width: auto;"> ¿Es trabajador nuevo? 
-            </label> 
+<div id="loginScreen">
+    <h2>Acceso Orbe Cloud</h2>
+    <input type="email" id="emailInput" placeholder="Email de responsable">
+    <input type="password" id="passInput" placeholder="Contraseña">
+    <button class="btn-main" onclick="handleLogin()">Entrar</button>
+</div>
 
-            <button type="submit" class="btn-main">Añadir a la Lista</button> 
-        </form> 
-    </div> 
- 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;"> 
-        <button class="btn-success" onclick="exportToExcel()">Exportar Excel</button> 
-        <button class="btn-import" onclick="document.getElementById('fileInput').click()">Importar Excel</button> 
-        <input type="file" id="fileInput" accept=".xlsx, .xls" onchange="importFromExcel(event)"> 
-    </div> 
-     
-    <button onclick="sendEmail()" style="background-color: #6c757d; margin-bottom: 20px;">Enviar Resumen Email</button> 
- 
-    <div id="workerList"></div> 
-</div> 
- 
-<script> 
-    let data = JSON.parse(localStorage.getItem('orbeApp')) || { 
-        projects: ['Obra Principal'], 
-        currentProject: 'Obra Principal', 
-        workers: { 'Obra Principal': [] } 
-    }; 
- 
-    document.getElementById('date').valueAsDate = new Date(); 
- 
-    function saveData() { localStorage.setItem('orbeApp', JSON.stringify(data)); } 
- 
-    function updateProjectSelect() { 
-        const select = document.getElementById('projectSelect'); 
-        select.innerHTML = ''; 
-        data.projects.forEach(p => { 
-            const opt = document.createElement('option'); 
-            opt.value = p; opt.textContent = p; 
-            if (p === data.currentProject) opt.selected = true; 
-            select.appendChild(opt); 
-        }); 
-    } 
- 
-    function changeProject() { 
-        data.currentProject = document.getElementById('projectSelect').value; 
-        saveData(); renderWorkers(); 
-    } 
- 
-    function addProject() { 
-        const name = prompt("Nombre de la obra:"); 
-        if (name && !data.projects.includes(name)) { 
-            data.projects.push(name); 
-            data.workers[name] = []; 
-            data.currentProject = name; 
-            saveData(); updateProjectSelect(); renderWorkers(); 
-        } 
-    } 
- 
-    document.getElementById('workerForm').addEventListener('submit', (e) => { 
-        e.preventDefault(); 
-        const dni = document.getElementById('dni').value.trim().toUpperCase(); 
- 
-        const worker = { 
-            id: Date.now(), 
-            name: document.getElementById('name').value.trim(), 
-            dni: dni, 
-            date: document.getElementById('date').value, 
-            attendance: document.querySelector('input[name="attendance"]:checked').value, 
-            obs: document.getElementById('obs').value.trim(), 
-            isNew: document.getElementById('isNew').checked ? 'Sí' : 'No' 
-        }; 
- 
-        data.workers[data.currentProject].push(worker); 
-        saveData(); renderWorkers(); 
-        e.target.reset(); 
-        document.getElementById('date').valueAsDate = new Date(); 
-    }); 
- 
-    function setStatus(id, status) { 
-        const list = data.workers[data.currentProject]; 
-        const idx = list.findIndex(w => w.id === id); 
-        if (idx !== -1) { 
-            list[idx].attendance = status; 
-            saveData(); renderWorkers(); 
-        } 
-    } 
- 
-    function deleteWorker(id) { 
-        if (confirm("¿Eliminar?")) { 
-            data.workers[data.currentProject] = data.workers[data.currentProject].filter(w => w.id !== id); 
-            saveData(); renderWorkers(); 
-        } 
-    } 
- 
-    function renderWorkers() { 
-        const container = document.getElementById('workerList'); 
-        container.innerHTML = ''; 
-        const workers = data.workers[data.currentProject] || []; 
-          
-        let p = 0, a = 0; 
-        workers.slice().reverse().forEach(w => { 
-            if (w.attendance === 'Presente') p++; else a++; 
-              
-            const div = document.createElement('div'); 
-            div.className = `worker-item ${w.attendance === 'Presente' ? 'present' : 'absent'}`; 
-            div.innerHTML = ` 
-                <div class="item-row"> 
-                    <div> 
-                        <b>${w.name}</b> <small>(${w.dni})</small> ${w.isNew === 'Sí' ? '🆕' : ''}<br> 
-                        <small style="opacity: 0.7">${w.date}</small> 
-                    </div> 
-                    <button class="btn-delete" onclick="deleteWorker(${w.id})">×</button> 
-                </div> 
-                <div class="item-row"> 
-                    <div class="btn-group-toggle"> 
-                        <button class="btn-toggle ${w.attendance === 'Presente' ? 'active-p' : ''}" onclick="setStatus(${w.id}, 'Presente')">Presente</button> 
-                        <button class="btn-toggle ${w.attendance === 'Ausente' ? 'active-a' : ''}" onclick="setStatus(${w.id}, 'Ausente')">Ausente</button> 
-                    </div> 
-                    <small><i>${w.obs}</i></small> 
-                </div> 
-            `; 
-            container.appendChild(div); 
-        }); 
- 
-        document.getElementById('countTotal').textContent = workers.length; 
-        document.getElementById('countPresent').textContent = p; 
-        document.getElementById('countAbsent').textContent = a; 
-    } 
- 
-    function importFromExcel(e) { 
-        const file = e.target.files[0]; 
-        if (!file) return;
-        const reader = new FileReader(); 
-        reader.onload = (evt) => { 
-            const bstr = evt.target.result; 
-            const wb = XLSX.read(bstr, { type: 'binary' }); 
-            const wsname = wb.SheetNames[0]; 
-            const ws = wb.Sheets[wsname]; 
-            const json = XLSX.utils.sheet_to_json(ws); 
- 
-            json.forEach(row => { 
-                data.workers[data.currentProject].push({ 
-                    id: Date.now() + Math.random(), 
-                    name: row["Nombre"] || "Sin nombre", 
-                    dni: row["DNI"] || row["DNI/NIE"] || "S/N", 
-                    date: row["Fecha"] || document.getElementById('date').value, 
-                    attendance: row["Asistencia"] || "Presente", 
-                    isNew: row["Nuevo Trabajador"] || "No", 
-                    obs: row["Observaciones"] || "" 
-                }); 
-            }); 
-            saveData(); renderWorkers(); 
-            alert("Importado con éxito"); 
-        }; 
-        reader.readAsBinaryString(file); 
-    } 
- 
-    function exportToExcel() { 
-        const currentWorkers = data.workers[data.currentProject];
-        if (!currentWorkers || currentWorkers.length === 0) {
-            alert("No hay datos para exportar");
-            return;
+<div class="container" id="mainApp"> 
+    <h1>Panel Obra</h1>
+    <div class="card">
+        <select id="projectSelect" onchange="loadWorkers()"></select>
+        <button onclick="addProject()" style="margin-top:5px; background: #eee;">+ Nueva Obra</button>
+    </div>
+
+    <button class="btn-send" onclick="exportAndSend()">GENERAR Y ENVIAR PARTE</button>
+
+    <div class="card">
+        <form id="workerForm">
+            <input type="text" id="wName" placeholder="Nombre completo" required>
+            <input type="text" id="wDni" placeholder="DNI">
+            <button type="submit" class="btn-main">Registrar en Nube</button>
+        </form>
+    </div>
+
+    <div id="workerList"></div>
+    <button onclick="firebase.auth().signOut()" style="background: none; color: red;">Cerrar Sesión</button>
+</div>
+
+<script>
+    // 1. TUS DATOS DE FIREBASE AQUÍ
+    const firebaseConfig = {
+        apiKey: "AIzaSyDWyZlRgjF2vM6AcrFE9882UTzvNhLVWEA",
+  authDomain: "orbeasistencia-497bb.firebaseapp.com",
+  projectId: "orbeasistencia-497bb",
+  storageBucket: "orbeasistencia-497bb.firebasestorage.app",
+  messagingSenderId: "676419217442",
+  appId: "1:676419217442:web:d77ba32421b68e3b2bc27b"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // 2. Control de Sesión
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            loadProjects();
+        } else {
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('mainApp').style.display = 'none';
         }
+    });
 
-        const ws = XLSX.utils.json_to_sheet(currentWorkers.map(w => ({ 
-            "Nombre": w.name, 
-            "DNI/NIE": w.dni, 
-            "Fecha": w.date, 
-            "Asistencia": w.attendance, 
-            "Nuevo Trabajador": w.isNew, 
-            "Observaciones": w.obs 
-        }))); 
+    async function handleLogin() {
+        const email = document.getElementById('emailInput').value;
+        const pass = document.getElementById('passInput').value;
+        try { await auth.signInWithEmailAndPassword(email, pass); } 
+        catch (e) { alert("Error de acceso"); }
+    }
 
-        const wb = XLSX.utils.book_new(); 
-        XLSX.utils.book_append_sheet(wb, ws, "Asistencia"); 
-        
-        // Generar el archivo en formato binario
-        const wbout = XLSX.write(wb, {bookType:'xlsx', type: 'binary'});
+    // 3. Lógica de Base de Datos
+    async function loadProjects() {
+        const snap = await db.collection('obras').get();
+        const select = document.getElementById('projectSelect');
+        select.innerHTML = '';
+        snap.forEach(doc => {
+            select.innerHTML += `<option value="${doc.id}">${doc.id}</option>`;
+        });
+        loadWorkers();
+    }
 
-        function s2ab(s) {
-            const buf = new ArrayBuffer(s.length);
-            const view = new Uint8Array(buf);
-            for (let i=0; i<s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
-            return buf;
+    async function addProject() {
+        const name = prompt("Nombre obra:");
+        if (name) {
+            await db.collection('obras').doc(name).set({ creado: new Date() });
+            loadProjects();
         }
+    }
 
-        // Crear un Blob y forzar la descarga mediante un enlace invisible
-        const fileName = `Asistencia_${data.currentProject.replace(/ /g, "_")}.xlsx`;
-        const blob = new Blob([s2ab(wbout)], {type:"application/octet-stream"});
+    document.getElementById('workerForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const obra = document.getElementById('projectSelect').value;
+        await db.collection('obras').doc(obra).collection('personal').add({
+            name: document.getElementById('wName').value,
+            dni: document.getElementById('wDni').value,
+            asistencia: 'Presente',
+            fecha: new Date().toLocaleDateString()
+        });
+        document.getElementById('workerForm').reset();
+        loadWorkers();
+    };
+
+    async function loadWorkers() {
+        const obra = document.getElementById('projectSelect').value;
+        const container = document.getElementById('workerList');
+        container.innerHTML = 'Cargando...';
+        const snap = await db.collection('obras').doc(obra).collection('personal').get();
+        container.innerHTML = '';
+        snap.forEach(doc => {
+            const w = doc.data();
+            container.innerHTML += `
+                <div class="worker-item" style="border-left-color: ${w.asistencia === 'Presente' ? '#28a745' : '#dc3545'}">
+                    <div><b>${w.name}</b><br><small>${w.dni}</small></div>
+                    <button onclick="toggleAsis('${doc.id}', '${w.asistencia}')">${w.asistencia}</button>
+                </div>`;
+        });
+    }
+
+    async function toggleAsis(id, actual) {
+        const obra = document.getElementById('projectSelect').value;
+        await db.collection('obras').doc(obra).collection('personal').doc(id).update({
+            asistencia: actual === 'Presente' ? 'Ausente' : 'Presente'
+        });
+        loadWorkers();
+    }
+
+    // El exportar se mantiene igual pero tomando datos de Firebase
+    async function exportAndSend() {
+        const obra = document.getElementById('projectSelect').value;
+        const snap = await db.collection('obras').doc(obra).collection('personal').get();
+        let lista = [];
+        snap.forEach(doc => lista.push(doc.data()));
+
+        const ws = XLSX.utils.json_to_sheet(lista);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Parte");
+        XLSX.writeFile(wb, `Parte_${obra}.xlsx`);
         
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        
-        // Limpiar
-        setTimeout(() => {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }, 100);
-    } 
- 
-    function sendEmail() { 
-        const workers = data.workers[data.currentProject]; 
-        let body = `Resumen ${data.currentProject}\n\n`; 
-        workers.forEach(w => body += `- ${w.name} (${w.dni}): ${w.attendance}\n`); 
-        window.location.href = `mailto:?subject=Asistencia&body=${encodeURIComponent(body)}`; 
-    } 
- 
-    updateProjectSelect(); 
-    renderWorkers(); 
+        // Aquí iría el mailto que ya tenemos...
+        alert("Excel generado y listo para enviar");
+    }
 </script> 
 </body> 
 </html>
