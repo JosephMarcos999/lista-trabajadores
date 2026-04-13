@@ -1,381 +1,381 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lista de Trabajadores</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista Orbe - Control de Asistencia</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --text-color: #333;
+            --card-bg: #fff;
+            --primary: #0056b3;
+            --primary-hover: #004494;
+            --success: #28a745;
+            --danger: #dc3545;
+            --border: #ccc;
+        }
 
-    :root {
-      --bg: #f5f5f3; --surface: #ffffff; --surface2: #f0efeb;
-      --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
-      --text: #1a1a18; --text2: #6b6b67; --text3: #9e9e9a;
-      --blue-bg: #e6f1fb; --blue-text: #0c447c; --blue-border: rgba(24,95,165,0.35);
-      --green-bg: #eaf3de; --green-text: #3b6d11; --green-border: rgba(57,109,17,0.35);
-      --red-bg: #fcebeb; --red-text: #a32d2d; --red-border: rgba(163,45,45,0.35);
-      --amber-bg: #faeeda; --amber-text: #854f0b; --amber-border: rgba(133,79,11,0.35);
-      --radius: 8px; --radius-lg: 12px;
-    }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #121212;
+                --text-color: #e0e0e0;
+                --card-bg: #1e1e1e;
+                --primary: #4dabf7;
+                --primary-hover: #3bc9db;
+                --success: #2b8a3e;
+                --danger: #c92a2a;
+                --border: #333;
+            }
+        }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1c1c1a; --surface: #242422; --surface2: #2e2e2b;
-        --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
-        --text: #f0efe8; --text2: #a0a09a; --text3: #666660;
-        --blue-bg: #042c53; --blue-text: #b5d4f4; --blue-border: rgba(55,138,221,0.35);
-        --green-bg: #173404; --green-text: #c0dd97; --green-border: rgba(99,153,34,0.35);
-        --red-bg: #501313; --red-text: #f7c1c1; --red-border: rgba(226,75,74,0.35);
-        --amber-bg: #412402; --amber-text: #fac775; --amber-border: rgba(239,159,39,0.35);
-      }
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 3rem; }
-    .app { max-width: 500px; margin: 0 auto; padding: 1rem; }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
 
-    .header { background: var(--surface2); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; border: 0.5px solid var(--border); }
-    .header h1 { font-size: 20px; font-weight: 600; }
-    .header p { font-size: 13px; color: var(--text2); margin-top: 3px; }
+        h1, h2, h3 { text-align: center; }
 
-    .project-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; }
-    .project-select { flex: 1; padding: 9px 11px; font-size: 14px; font-weight: 500; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--surface); color: var(--text); font-family: inherit; cursor: pointer; }
-    .project-select:focus { outline: none; border-color: var(--blue-text); }
-    .icon-btn { width: 38px; height: 38px; min-width: 38px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .icon-btn:hover { background: var(--surface2); }
-    .icon-btn.danger:hover { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
 
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
-    .modal-overlay.open { display: flex; }
-    .modal { background: var(--surface); border-radius: var(--radius-lg); border: 0.5px solid var(--border2); padding: 1.25rem; width: 100%; max-width: 360px; }
-    .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
-    .modal-btns { display: flex; gap: 8px; margin-top: 12px; }
+        .form-group {
+            margin-bottom: 15px;
+        }
 
-    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
-    .stat { background: var(--surface2); border-radius: var(--radius); padding: 10px; text-align: center; }
-    .stat-num { font-size: 24px; font-weight: 600; }
-    .stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
 
-    .card { background: var(--surface); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 1rem 1.25rem; margin-bottom: 1rem; }
-    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+        input[type="text"], input[type="date"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
 
-    .field { margin-bottom: 10px; }
-    .field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; font-weight: 500; }
-    .field input, .field textarea { width: 100%; padding: 9px 11px; font-size: 15px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--surface2); color: var(--text); font-family: inherit; }
-    .field textarea { resize: none; height: 64px; }
-    .field input:focus, .field textarea:focus { outline: none; border-color: var(--blue-text); }
-    .field input.error { border-color: var(--red-text); }
-    .field .hint { font-size: 11px; color: var(--text3); margin-top: 3px; }
-    .field .hint.err { color: var(--red-text); }
+        .radio-group, .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 5px;
+        }
 
-    .check-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
-    .check-label input[type=checkbox] { width: 17px; height: 17px; cursor: pointer; accent-color: var(--blue-text); }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
 
-    .btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); width: 100%; margin-top: 4px; transition: background 0.15s; font-family: inherit; }
-    .btn:hover { background: var(--surface2); }
-    .btn.primary { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue-border); }
-    .btn.success { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
-    .btn.sm { padding: 7px 12px; font-size: 13px; margin-top: 0; }
-    .send-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+        button:hover { background-color: var(--primary-hover); }
+        .btn-success { background-color: var(--success); }
+        .btn-success:hover { background-color: #218838; }
 
-    .worker-row { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
-    .worker-row:last-child { border-bottom: none; }
-    .worker-top { display: flex; align-items: center; gap: 10px; }
-    .avatar { width: 38px; height: 38px; min-width: 38px; border-radius: 50%; background: var(--blue-bg); color: var(--blue-text); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
-    .worker-info { flex: 1; min-width: 0; }
-    .worker-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .worker-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
-    .worker-obs { font-size: 12px; color: var(--text3); margin-top: 5px; font-style: italic; padding-left: 48px; }
-    .new-badge { font-size: 10px; background: var(--amber-bg); color: var(--amber-text); padding: 2px 6px; border-radius: var(--radius); font-weight: 600; margin-left: 5px; }
-    .check-btn { width: 32px; height: 32px; min-width: 32px; border-radius: 50%; border: 0.5px solid var(--border2); background: var(--surface2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; }
-    .check-btn.present { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
-    .check-btn.absent { background: var(--red-bg); border-color: var(--red-border); color: var(--red-text); }
-    .del-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 18px; padding: 4px 6px; line-height: 1; }
-    .del-btn:hover { color: var(--red-text); }
-    .empty { text-align: center; color: var(--text3); font-size: 13px; padding: 1.5rem 0; }
-    .info-note { font-size: 12px; color: var(--text2); background: var(--surface2); border-radius: var(--radius); padding: 8px 10px; margin-top: 10px; line-height: 1.5; }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            text-align: center;
+        }
 
-    .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--green-bg); color: var(--green-text); border: 0.5px solid var(--green-border); border-radius: var(--radius); padding: 10px 20px; font-size: 13px; font-weight: 500; display: none; z-index: 999; white-space: nowrap; }
-    .toast.warn { background: var(--amber-bg); color: var(--amber-text); border-color: var(--amber-border); }
-    .toast.err { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
-  </style>
+        .stat-box {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            width: 30%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-weight: bold;
+        }
+
+        .worker-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .worker-item {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .present { border-left-color: var(--success); }
+        .absent { border-left-color: var(--danger); }
+        
+        .project-header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .error { color: var(--danger); font-size: 0.9em; display: none; }
+    </style>
 </head>
 <body>
-<div class="app">
 
-  <div class="header">
-    <h1>Lista de trabajadores</h1>
-    <p>Control de asistencia por obra o proyecto</p>
-  </div>
+<div class="container">
+    <h1>Lista Orbe</h1>
 
-  <div class="project-bar">
-    <select class="project-select" id="project-select" onchange="switchProject()"></select>
-    <button class="icon-btn" onclick="openNewProject()" title="Nueva obra">＋</button>
-    <button class="icon-btn danger" onclick="deleteProject()" title="Eliminar obra">🗑</button>
-  </div>
+    <div class="card">
+        <label for="projectSelect">Seleccionar Obra/Proyecto:</label>
+        <div class="project-header">
+            <select id="projectSelect" onchange="changeProject()"></select>
+            <button onclick="addProject()" style="width: auto; margin-top: 0;">+ Nueva</button>
+        </div>
+    </div>
 
-  <div class="stats">
-    <div class="stat"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total</div></div>
-    <div class="stat"><div class="stat-num" id="stat-present" style="color:var(--green-text)">0</div><div class="stat-label">Presentes</div></div>
-    <div class="stat"><div class="stat-num" id="stat-absent" style="color:var(--red-text)">0</div><div class="stat-label">Ausentes</div></div>
-  </div>
+    <div class="stats">
+        <div class="stat-box">Total<br><span id="countTotal">0</span></div>
+        <div class="stat-box" style="color: var(--success);">Presentes<br><span id="countPresent">0</span></div>
+        <div class="stat-box" style="color: var(--danger);">Ausentes<br><span id="countAbsent">0</span></div>
+    </div>
 
-  <div class="card">
-    <h2>Añadir trabajador</h2>
-    <div class="field">
-      <label>Nombre completo</label>
-      <input id="inp-name" type="text" placeholder="Ej: Ana García López" />
-    </div>
-    <div class="field">
-      <label>DNI</label>
-      <input id="inp-dni" type="text" placeholder="Ej: 12345678Z" maxlength="9" oninput="formatDNI(this)" />
-      <div class="hint" id="dni-hint">8 números seguidos de una letra</div>
-    </div>
-    <div class="field">
-      <label>Fecha de la jornada</label>
-      <input id="inp-date" type="date" />
-    </div>
-    <div class="field">
-      <label>Observaciones (opcional)</label>
-      <textarea id="inp-obs" placeholder="Ej: Turno tarde, incorporación hoy..."></textarea>
-    </div>
-    <div class="field">
-      <label class="check-label">
-        <input type="checkbox" id="inp-new" /> Trabajador nuevo
-      </label>
-    </div>
-    <button class="btn primary" onclick="addWorker()">+ Añadir a la lista</button>
-  </div>
+    <div class="card">
+        <h3>Añadir Trabajador</h3>
+        <form id="workerForm">
+            <div class="form-group">
+                <label for="name">Nombre completo</label>
+                <input type="text" id="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="dni">DNI / NIE</label>
+                <input type="text" id="dni" placeholder="Ej: 12345678Z" required>
+                <span id="dniError" class="error">Formato de DNI inválido (8 números y 1 letra)</span>
+            </div>
 
-  <div class="card">
-    <h2 id="list-title">Lista de trabajadores</h2>
-    <div id="worker-list"><div class="empty">Crea una obra primero pulsando ＋</div></div>
-  </div>
+            <div class="form-group">
+                <label for="date">Fecha de jornada</label>
+                <input type="date" id="date" required>
+            </div>
 
-  <div class="card">
-    <h2>Enviar lista</h2>
-    <div class="field">
-      <label>Email destinatario</label>
-      <input id="inp-email" type="email" placeholder="responsable@empresa.com" />
-    </div>
-    <div class="send-grid">
-      <button class="btn success" onclick="sendEmail()">Enviar por correo</button>
-      <button class="btn" onclick="exportExcel()">Descargar Excel</button>
-    </div>
-    <div class="info-note">Al pulsar "Enviar por correo" se abrirá tu app de correo con el resumen listo. El Excel se descarga por separado para adjuntarlo.</div>
-  </div>
+            <div class="form-group">
+                <label>Asistencia</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="attendance" value="Presente" checked> Presente</label>
+                    <label><input type="radio" name="attendance" value="Ausente"> Ausente</label>
+                </div>
+            </div>
 
+            <div class="form-group">
+                <label for="obs">Observaciones</label>
+                <textarea id="obs" rows="2"></textarea>
+            </div>
+
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="isNew">
+                <label for="isNew" style="margin: 0;">Trabajador Nuevo</label>
+            </div>
+
+            <button type="submit">Añadir a la lista</button>
+        </form>
+    </div>
+
+    <button class="btn-success" onclick="exportToExcel()">Exportar a Excel (.xlsx)</button>
+    <button onclick="sendEmail()" style="background-color: #6c757d; margin-bottom: 20px;">Enviar Resumen por Correo</button>
+
+    <ul class="worker-list" id="workerList"></ul>
 </div>
-
-<div class="modal-overlay" id="modal-new">
-  <div class="modal">
-    <h3>Nueva obra o proyecto</h3>
-    <div class="field">
-      <label>Nombre de la obra</label>
-      <input id="modal-name" type="text" placeholder="Ej: Obra Centro, Proyecto Norte..." />
-    </div>
-    <div class="modal-btns">
-      <button class="btn sm primary" onclick="createProject()" style="flex:1">Crear</button>
-      <button class="btn sm" onclick="closeModal()" style="flex:1">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
 
 <script>
-const STORAGE_KEY = "obras_v2";
-const EMAIL_KEY = "lista_email_v1";
-let data = {};
-let currentProject = null;
+    // Inicialización de datos
+    let data = JSON.parse(localStorage.getItem('orbeApp')) || {
+        projects: ['Obra Principal'],
+        currentProject: 'Obra Principal',
+        workers: { 'Obra Principal': [] }
+    };
 
-function todayISO() { return new Date().toISOString().split("T")[0]; }
-function formatDateES(iso) { if (!iso) return ""; const [y,m,d] = iso.split("-"); return `${d}/${m}/${y}`; }
+    // Validar DNI (8 números + 1 letra)
+    const validateDNI = (dni) => /^\d{8}[A-Za-z]$/.test(dni);
 
-function load() {
-  try { data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { data = {}; }
-  try { const e = localStorage.getItem(EMAIL_KEY); if (e) document.getElementById("inp-email").value = e; } catch(e) {}
-  document.getElementById("inp-date").value = todayISO();
-}
+    // Inicializar UI
+    document.getElementById('date').valueAsDate = new Date();
+    updateProjectSelect();
+    renderWorkers();
 
-function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {} }
+    // Cambiar de proyecto
+    function changeProject() {
+        data.currentProject = document.getElementById('projectSelect').value;
+        saveData();
+        renderWorkers();
+    }
 
-function getWorkers() { return currentProject && data[currentProject] ? data[currentProject].workers : []; }
+    // Añadir nuevo proyecto
+    function addProject() {
+        const newProject = prompt("Nombre de la nueva obra:");
+        if (newProject && !data.projects.includes(newProject)) {
+            data.projects.push(newProject);
+            data.workers[newProject] = [];
+            data.currentProject = newProject;
+            saveData();
+            updateProjectSelect();
+            renderWorkers();
+        }
+    }
 
-function renderProjectSelector() {
-  const sel = document.getElementById("project-select");
-  const projects = Object.keys(data);
-  sel.innerHTML = "";
-  if (projects.length === 0) {
-    sel.innerHTML = '<option value="">— Sin obras creadas —</option>';
-    currentProject = null; return;
-  }
-  projects.forEach(p => {
-    const opt = document.createElement("option");
-    opt.value = p; opt.textContent = p;
-    if (p === currentProject) opt.selected = true;
-    sel.appendChild(opt);
-  });
-  if (!currentProject || !data[currentProject]) currentProject = projects[0];
-  sel.value = currentProject;
-}
+    // Actualizar selector de proyectos
+    function updateProjectSelect() {
+        const select = document.getElementById('projectSelect');
+        select.innerHTML = '';
+        data.projects.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p;
+            option.textContent = p;
+            if (p === data.currentProject) option.selected = true;
+            select.appendChild(option);
+        });
+    }
 
-function switchProject() { currentProject = document.getElementById("project-select").value; renderAll(); }
+    // Manejar formulario
+    document.getElementById('workerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const dniInput = document.getElementById('dni').value.trim().toUpperCase();
+        
+        if (!validateDNI(dniInput)) {
+            document.getElementById('dniError').style.display = 'block';
+            return;
+        }
+        document.getElementById('dniError').style.display = 'none';
 
-function openNewProject() {
-  document.getElementById("modal-name").value = "";
-  document.getElementById("modal-new").classList.add("open");
-  setTimeout(() => document.getElementById("modal-name").focus(), 100);
-}
+        const worker = {
+            id: Date.now(),
+            name: document.getElementById('name').value.trim(),
+            dni: dniInput,
+            date: document.getElementById('date').value,
+            attendance: document.querySelector('input[name="attendance"]:checked').value,
+            obs: document.getElementById('obs').value.trim(),
+            isNew: document.getElementById('isNew').checked ? 'Sí' : 'No'
+        };
 
-function closeModal() { document.getElementById("modal-new").classList.remove("open"); }
+        data.workers[data.currentProject].push(worker);
+        saveData();
+        renderWorkers();
+        
+        // Reset form parcial (mantiene fecha)
+        document.getElementById('name').value = '';
+        document.getElementById('dni').value = '';
+        document.getElementById('obs').value = '';
+        document.getElementById('isNew').checked = false;
+        document.getElementById('name').focus();
+    });
 
-function createProject() {
-  const name = document.getElementById("modal-name").value.trim();
-  if (!name) { showToast("⚠ Escribe un nombre", "warn"); return; }
-  if (data[name]) { showToast("⚠ Ya existe esa obra", "warn"); return; }
-  data[name] = { workers: [] };
-  currentProject = name;
-  save(); closeModal(); renderAll();
-  showToast("✓ Obra creada: " + name);
-}
+    // Renderizar trabajadores y actualizar contadores
+    function renderWorkers() {
+        const list = document.getElementById('workerList');
+        list.innerHTML = '';
+        
+        const currentWorkers = data.workers[data.currentProject] || [];
+        let presents = 0;
+        let absents = 0;
 
-function deleteProject() {
-  if (!currentProject) return;
-  if (!confirm(`¿Eliminar la obra "${currentProject}" y todos sus trabajadores?`)) return;
-  delete data[currentProject];
-  currentProject = null;
-  save(); renderProjectSelector(); renderAll();
-  showToast("Obra eliminada");
-}
+        currentWorkers.slice().reverse().forEach(w => {
+            if (w.attendance === 'Presente') presents++;
+            else absents++;
 
-function getInitials(name) { return name.split(" ").slice(0,2).map(n => n[0]).join("").toUpperCase(); }
+            const li = document.createElement('li');
+            li.className = `worker-item ${w.attendance === 'Presente' ? 'present' : 'absent'}`;
+            li.innerHTML = `
+                <div>
+                    <strong>${w.name}</strong> (${w.dni}) ${w.isNew === 'Sí' ? '🆕' : ''}<br>
+                    <small>${w.date} - ${w.attendance}</small>
+                    ${w.obs ? `<br><small><i>Obs: ${w.obs}</i></small>` : ''}
+                </div>
+                <button onclick="deleteWorker(${w.id})" style="width: auto; padding: 5px 10px; background: var(--danger); margin-top:0;">X</button>
+            `;
+            list.appendChild(li);
+        });
 
-function validateDNI(dni) { return /^\d{8}[A-Za-z]$/.test(dni); }
+        document.getElementById('countTotal').textContent = currentWorkers.length;
+        document.getElementById('countPresent').textContent = presents;
+        document.getElementById('countAbsent').textContent = absents;
+    }
 
-function formatDNI(input) {
-  let val = input.value.toUpperCase().replace(/[^0-9A-Z]/g, "");
-  if (val.length > 9) val = val.slice(0, 9);
-  input.value = val;
-  const hint = document.getElementById("dni-hint");
-  if (val.length === 0) { hint.textContent = "8 números seguidos de una letra"; hint.className = "hint"; input.classList.remove("error"); }
-  else if (validateDNI(val)) { hint.textContent = "✓ Formato correcto"; hint.className = "hint"; input.classList.remove("error"); }
-  else { hint.textContent = "Formato: 8 números + 1 letra (ej: 12345678Z)"; hint.className = "hint err"; input.classList.add("error"); }
-}
+    // Borrar trabajador (para corregir errores)
+    function deleteWorker(id) {
+        if(confirm("¿Eliminar este registro?")) {
+            data.workers[data.currentProject] = data.workers[data.currentProject].filter(w => w.id !== id);
+            saveData();
+            renderWorkers();
+        }
+    }
 
-function updateStats() {
-  const workers = getWorkers();
-  const present = workers.filter(w => w.present).length;
-  document.getElementById("stat-total").textContent = workers.length;
-  document.getElementById("stat-present").textContent = present;
-  document.getElementById("stat-absent").textContent = workers.length - present;
-}
+    // Guardar en localStorage
+    function saveData() {
+        localStorage.setItem('orbeApp', JSON.stringify(data));
+    }
 
-function renderWorkers() {
-  const workers = getWorkers();
-  const list = document.getElementById("worker-list");
-  document.getElementById("list-title").textContent = currentProject ? `Lista — ${currentProject}` : "Lista de trabajadores";
-  if (!currentProject) { list.innerHTML = '<div class="empty">Crea una obra primero pulsando ＋</div>'; updateStats(); return; }
-  if (workers.length === 0) { list.innerHTML = '<div class="empty">Aún no hay trabajadores en esta obra</div>'; updateStats(); return; }
-  list.innerHTML = workers.map((w, i) => `
-    <div class="worker-row">
-      <div class="worker-top">
-        <div class="avatar">${getInitials(w.name)}</div>
-        <div class="worker-info">
-          <div class="worker-name">${w.name}${w.isNew ? '<span class="new-badge">NUEVO</span>' : ""}</div>
-          <div class="worker-meta">DNI: ${w.dni} · ${formatDateES(w.date)}</div>
-        </div>
-        <button class="check-btn ${w.present ? "present" : "absent"}" onclick="togglePresent(${i})">
-          ${w.present ? "✓" : "✗"}
-        </button>
-        <button class="del-btn" onclick="removeWorker(${i})">✕</button>
-      </div>
-      ${w.obs ? `<div class="worker-obs">${w.obs}</div>` : ""}
-    </div>
-  `).join("");
-  updateStats();
-}
+    // Exportar a Excel real (.xlsx)
+    function exportToExcel() {
+        const currentWorkers = data.workers[data.currentProject] || [];
+        if (currentWorkers.length === 0) return alert("No hay datos para exportar.");
 
-function renderAll() { renderProjectSelector(); renderWorkers(); }
+        const exportData = currentWorkers.map(w => ({
+            "Nombre": w.name,
+            "DNI": w.dni,
+            "Fecha": w.date,
+            "Asistencia": w.attendance,
+            "Nuevo Trabajador": w.isNew,
+            "Observaciones": w.obs
+        }));
 
-function addWorker() {
-  if (!currentProject) { showToast("⚠ Crea una obra primero", "warn"); return; }
-  const name = document.getElementById("inp-name").value.trim();
-  const dni = document.getElementById("inp-dni").value.trim().toUpperCase();
-  const date = document.getElementById("inp-date").value;
-  const obs = document.getElementById("inp-obs").value.trim();
-  const isNew = document.getElementById("inp-new").checked;
-  if (!name) { showToast("⚠ Escribe el nombre del trabajador", "warn"); return; }
-  if (!validateDNI(dni)) { showToast("⚠ DNI incorrecto: 8 números + 1 letra (ej: 12345678Z)", "err"); return; }
-  if (!date) { showToast("⚠ Selecciona una fecha", "warn"); return; }
-  data[currentProject].workers.push({ name, dni, date, isNew, present: true, obs });
-  save();
-  document.getElementById("inp-name").value = "";
-  document.getElementById("inp-dni").value = "";
-  document.getElementById("inp-date").value = todayISO();
-  document.getElementById("inp-obs").value = "";
-  document.getElementById("inp-new").checked = false;
-  document.getElementById("dni-hint").textContent = "8 números seguidos de una letra";
-  document.getElementById("dni-hint").className = "hint";
-  document.getElementById("inp-dni").classList.remove("error");
-  renderWorkers();
-  showToast("✓ Trabajador añadido");
-}
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
+        
+        const filename = `Asistencia_${data.currentProject.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, filename);
+    }
 
-function togglePresent(i) { data[currentProject].workers[i].present = !data[currentProject].workers[i].present; save(); renderWorkers(); }
+    // Enviar correo de resumen
+    function sendEmail() {
+        const currentWorkers = data.workers[data.currentProject] || [];
+        const presents = currentWorkers.filter(w => w.attendance === 'Presente').length;
+        const absents = currentWorkers.length - presents;
+        const dateStr = document.getElementById('date').value;
 
-function removeWorker(i) {
-  if (!confirm(`¿Eliminar a ${data[currentProject].workers[i].name}?`)) return;
-  data[currentProject].workers.splice(i, 1);
-  save(); renderWorkers();
-}
+        const subject = encodeURIComponent(`Resumen de Asistencia - ${data.currentProject} - ${dateStr}`);
+        let body = `Resumen de Asistencia para la obra: ${data.currentProject}\nFecha: ${dateStr}\n\n`;
+        body += `Total Trabajadores: ${currentWorkers.length}\nPresentes: ${presents}\nAusentes: ${absents}\n\n`;
+        body += `--- DETALLE ---\n`;
+        
+        currentWorkers.forEach(w => {
+            body += `- ${w.name} (${w.dni}): ${w.attendance} ${w.isNew === 'Sí' ? '[NUEVO]' : ''}\n`;
+        });
 
-function exportExcel() {
-  if (!currentProject) { showToast("⚠ Selecciona una obra", "warn"); return; }
-  const workers = getWorkers();
-  if (workers.length === 0) { showToast("⚠ La lista está vacía", "warn"); return; }
-  const headers = ["Nombre", "DNI", "Fecha", "Asistencia", "Nuevo trabajador", "Observaciones"];
-  const rows = workers.map(w => [w.name, w.dni, formatDateES(w.date), w.present ? "Presente" : "Ausente", w.isNew ? "Sí" : "No", w.obs || ""]);
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  ws["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 30 }];
-  XLSX.utils.book_append_sheet(wb, ws, currentProject.slice(0, 31));
-  XLSX.writeFile(wb, `${currentProject}_${todayISO()}.xlsx`);
-  showToast("✓ Excel descargado");
-}
-
-function sendEmail() {
-  const email = document.getElementById("inp-email").value.trim();
-  if (!email) { showToast("⚠ Introduce el email del destinatario", "warn"); return; }
-  if (!currentProject) { showToast("⚠ Selecciona una obra", "warn"); return; }
-  const workers = getWorkers();
-  if (workers.length === 0) { showToast("⚠ La lista está vacía", "warn"); return; }
-  try { localStorage.setItem(EMAIL_KEY, email); } catch(e) {}
-  const present = workers.filter(w => w.present);
-  const absent = workers.filter(w => !w.present);
-  const nuevos = workers.filter(w => w.isNew);
-  let body = `Lista de trabajadores - ${currentProject}%0AFecha: ${formatDateES(todayISO())}%0A%0ARESUMEN%0ATotal: ${workers.length} | Presentes: ${present.length} | Ausentes: ${absent.length}%0A`;
-  if (nuevos.length > 0) body += `Nuevos: ${nuevos.map(w => w.name).join(", ")}%0A`;
-  body += `%0ADETALLE%0A----------------------------------%0A`;
-  workers.forEach(w => { body += `${w.present ? "✓" : "✗"} ${w.name} | DNI: ${w.dni} | ${formatDateES(w.date)}${w.isNew ? " | NUEVO" : ""}${w.obs ? ` | ${w.obs}` : ""}%0A`; });
-  body += `%0AAdjunta el Excel descargado desde la app para el detalle completo.`;
-  window.location.href = `mailto:${email}?subject=${encodeURIComponent(`Lista trabajadores - ${currentProject} - ${formatDateES(todayISO())}`)}&body=${body}`;
-  showToast("✓ Abriendo tu app de correo...");
-}
-
-function showToast(msg, type) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.className = "toast" + (type ? ` ${type}` : "");
-  t.style.display = "block";
-  setTimeout(() => { t.style.display = "none"; }, 2800);
-}
-
-document.getElementById("modal-new").addEventListener("click", e => { if (e.target.id === "modal-new") closeModal(); });
-document.getElementById("modal-name").addEventListener("keydown", e => { if (e.key === "Enter") createProject(); });
-
-load();
-renderAll();
+        window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
+    }
 </script>
+
 </body>
 </html>
