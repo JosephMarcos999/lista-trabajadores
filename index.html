@@ -15,7 +15,8 @@
         #loginScreen { max-width: 350px; margin: 80px auto; text-align: center; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); } 
         input, select { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        button { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:disabled { background: #ccc !important; cursor: not-allowed; }
         .btn-main { background: var(--primary); color: white; }
         .btn-send { background: #107c10; color: white; }
         .worker-item { background: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; display: flex; justify-content: space-between; align-items: center; }
@@ -37,9 +38,9 @@
         <button onclick="addProject()" style="margin-top:5px; background: #eee;">+ Nueva Obra</button>
     </div>
 
-    <button class="btn-send" onclick="exportAndSend()">GENERAR Y ENVIAR PARTE</button>
+    <button id="btnExport" class="btn-send" onclick="exportAndSend()">SINCRONIZAR CON ONEDRIVE</button>
 
-    <div class="card">
+    <div class="card" style="margin-top: 20px;">
         <form id="workerForm">
             <input type="text" id="wName" placeholder="Nombre completo" required>
             <input type="text" id="wDni" placeholder="DNI">
@@ -48,26 +49,25 @@
     </div>
 
     <div id="workerList"></div>
-    <button onclick="firebase.auth().signOut()" style="background: none; color: red;">Cerrar Sesión</button>
+    <button onclick="firebase.auth().signOut()" style="background: none; color: red; margin-top: 20px;">Cerrar Sesión</button>
 </div>
 
 <script>
-    // 1. TUS DATOS DE FIREBASE AQUÍ
+    // 1. CONFIGURACIÓN FIREBASE
     const firebaseConfig = {
         apiKey: "AIzaSyDWyZlRgjF2vM6AcrFE9882UTzvNhLVWEA",
-  authDomain: "orbeasistencia-497bb.firebaseapp.com",
-  projectId: "orbeasistencia-497bb",
-  storageBucket: "orbeasistencia-497bb.firebasestorage.app",
-  messagingSenderId: "676419217442",
-  appId: "1:676419217442:web:d77ba32421b68e3b2bc27b"
+        authDomain: "orbeasistencia-497bb.firebaseapp.com",
+        projectId: "orbeasistencia-497bb",
+        storageBucket: "orbeasistencia-497bb.firebasestorage.app",
+        messagingSenderId: "676419217442",
+        appId: "1:676419217442:web:d77ba32421b68e3b2bc27b"
     };
 
-    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
 
-    // 2. Control de Sesión
+    // 2. CONTROL DE SESIÓN
     auth.onAuthStateChanged(user => {
         if (user) {
             document.getElementById('loginScreen').style.display = 'none';
@@ -86,7 +86,7 @@
         catch (e) { alert("Error de acceso"); }
     }
 
-    // 3. Lógica de Base de Datos
+    // 3. LÓGICA DE BASE DE DATOS
     async function loadProjects() {
         const snap = await db.collection('obras').get();
         const select = document.getElementById('projectSelect');
@@ -112,7 +112,7 @@
             name: document.getElementById('wName').value,
             dni: document.getElementById('wDni').value,
             asistencia: 'Presente',
-            fecha: new Date().toLocaleDateString()
+            fecha: new Date().toLocaleDateString('es-ES')
         });
         document.getElementById('workerForm').reset();
         loadWorkers();
@@ -121,7 +121,8 @@
     async function loadWorkers() {
         const obra = document.getElementById('projectSelect').value;
         const container = document.getElementById('workerList');
-        container.innerHTML = 'Cargando...';
+        if(!obra) return;
+        container.innerHTML = 'Cargando personal...';
         const snap = await db.collection('obras').doc(obra).collection('personal').get();
         container.innerHTML = '';
         snap.forEach(doc => {
@@ -142,20 +143,64 @@
         loadWorkers();
     }
 
-    // El exportar se mantiene igual pero tomando datos de Firebase
+    // --- FUNCIÓN CLAVE: ENVÍO A POWER AUTOMATE / ONEDRIVE ---
     async function exportAndSend() {
         const obra = document.getElementById('projectSelect').value;
-        const snap = await db.collection('obras').doc(obra).collection('personal').get();
-        let lista = [];
-        snap.forEach(doc => lista.push(doc.data()));
-
-        const ws = XLSX.utils.json_to_sheet(lista);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Parte");
-        XLSX.writeFile(wb, `Parte_${obra}.xlsx`);
+        const btn = document.getElementById('btnExport');
         
-        // Aquí iría el mailto que ya tenemos...
-        alert("Excel generado y listo para enviar");
+        if (!obra) return alert("Selecciona una obra primero");
+
+        // Bloqueamos el botón para evitar doble clic
+        btn.disabled = true;
+        btn.innerText = "ENVIANDO DATOS...";
+
+        try {
+            // 1. Obtener datos de Firestore
+            const snap = await db.collection('obras').doc(obra).collection('personal').get();
+            let listaTrabajadores = [];
+            
+            snap.forEach(doc => {
+                const w = doc.data();
+                listaTrabajadores.push({
+                    fecha: w.fecha || new Date().toLocaleDateString('es-ES'),
+                    obra: obra,
+                    nombre: w.name,
+                    dni: w.dni,
+                    asistencia: w.asistencia
+                });
+            });
+
+            if (listaTrabajadores.length === 0) {
+                alert("No hay trabajadores registrados en esta obra.");
+                btn.disabled = false;
+                btn.innerText = "SINCRONIZAR CON ONEDRIVE";
+                return;
+            }
+
+            // 2. ENVIAR A POWER AUTOMATE
+            // PEGA TU URL DE POWER AUTOMATE AQUÍ ABAJO:
+            const webhookURL = "https://default2630e7be8e644fb1b8bab51dbd63ae.72.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/502f9413daff41109d74422980cc42f7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=fdQGV2qsKWxFzTCi_F3wzwupbYecJGSYff0UhGuzdVQ";
+
+            const response = await fetch(webhookURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(listaTrabajadores)
+            });
+
+            if (response.ok) {
+                alert("✅ Éxito: El Excel en OneDrive ha sido actualizado.");
+            } else {
+                throw new Error("Error en el servidor de Microsoft");
+            }
+
+        } catch (error) {
+            console.error("Error detallado:", error);
+            alert("❌ Error al sincronizar. Asegúrate de que la URL de Power Automate sea correcta.");
+        } finally {
+            // Reestablecer botón
+            btn.disabled = false;
+            btn.innerText = "SINCRONIZAR CON ONEDRIVE";
+        }
     }
 </script> 
 </body> 
