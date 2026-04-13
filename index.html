@@ -140,6 +140,16 @@
         }
         
         .error { color: var(--danger); font-size: 0.9em; display: none; }
+        
+        /* Estilo extra para el select de la lista */
+        .status-select {
+            width: auto;
+            padding: 2px 5px;
+            font-size: 0.9em;
+            margin-left: 5px;
+            display: inline-block;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -290,6 +300,18 @@
         document.getElementById('name').focus();
     });
 
+    // Cambiar estado de asistencia directamente desde la lista
+    function toggleAttendance(id, newStatus) {
+        const workers = data.workers[data.currentProject];
+        const workerIndex = workers.findIndex(w => w.id === id);
+        
+        if (workerIndex !== -1) {
+            workers[workerIndex].attendance = newStatus;
+            saveData();
+            renderWorkers();
+        }
+    }
+
     // Renderizar trabajadores y actualizar contadores
     function renderWorkers() {
         const list = document.getElementById('workerList');
@@ -306,12 +328,16 @@
             const li = document.createElement('li');
             li.className = `worker-item ${w.attendance === 'Presente' ? 'present' : 'absent'}`;
             li.innerHTML = `
-                <div>
+                <div style="flex-grow: 1;">
                     <strong>${w.name}</strong> (${w.dni}) ${w.isNew === 'Sí' ? '🆕' : ''}<br>
-                    <small>${w.date} - ${w.attendance}</small>
+                    <small>${w.date}</small> - 
+                    <select class="status-select" onchange="toggleAttendance(${w.id}, this.value)">
+                        <option value="Presente" ${w.attendance === 'Presente' ? 'selected' : ''}>Presente</option>
+                        <option value="Ausente" ${w.attendance === 'Ausente' ? 'selected' : ''}>Ausente</option>
+                    </select>
                     ${w.obs ? `<br><small><i>Obs: ${w.obs}</i></small>` : ''}
                 </div>
-                <button onclick="deleteWorker(${w.id})" style="width: auto; padding: 5px 10px; background: var(--danger); margin-top:0;">X</button>
+                <button onclick="deleteWorker(${w.id})" style="width: auto; padding: 5px 10px; background: var(--danger); margin-top:0; margin-left: 10px;">X</button>
             `;
             list.appendChild(li);
         });
