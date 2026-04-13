@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lista de Trabajadores</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --surface2: #f0efeb;
+      --border: rgba(0,0,0,0.12);
+      --border2: rgba(0,0,0,0.22);
+      --text: #1a1a18;
+      --text2: #6b6b67;
+      --text3: #9e9e9a;
+      --blue-bg: #e6f1fb;
+      --blue-text: #0c447c;
+      --blue-border: rgba(24,95,165,0.35);
+      --green-bg: #eaf3de;
+      --green-text: #3b6d11;
+      --green-border: rgba(57,109,17,0.35);
+      --red-bg: #fcebeb;
+      --red-text: #a32d2d;
+      --red-border: rgba(163,45,45,0.35);
+      --amber-bg: #faeeda;
+      --amber-text: #854f0b;
+      --amber-border: rgba(133,79,11,0.35);
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a;
+        --surface: #242422;
+        --surface2: #2e2e2b;
+        --border: rgba(255,255,255,0.1);
+        --border2: rgba(255,255,255,0.2);
+        --text: #f0efe8;
+        --text2: #a0a09a;
+        --text3: #666660;
+        --blue-bg: #042c53;
+        --blue-text: #b5d4f4;
+        --blue-border: rgba(55,138,221,0.35);
+        --green-bg: #173404;
+        --green-text: #c0dd97;
+        --green-border: rgba(99,153,34,0.35);
+        --red-bg: #501313;
+        --red-text: #f7c1c1;
+        --red-border: rgba(226,75,74,0.35);
+        --amber-bg: #412402;
+        --amber-text: #fac775;
+        --amber-border: rgba(239,159,39,0.35);
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 2rem;
+    }
+
+    .app { max-width: 500px; margin: 0 auto; padding: 1rem; }
+
+    .header {
+      background: var(--surface2);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      border: 0.5px solid var(--border);
+    }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header p { font-size: 13px; color: var(--text2); margin-top: 3px; }
+    .date-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--blue-bg); color: var(--blue-text);
+      font-size: 12px; padding: 4px 10px;
+      border-radius: var(--radius); margin-top: 8px; font-weight: 500;
+    }
+
+    .stats {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px; margin-bottom: 1rem;
+    }
+    .stat {
+      background: var(--surface2); border-radius: var(--radius);
+      padding: 10px; text-align: center;
+    }
+    .stat-num { font-size: 24px; font-weight: 600; }
+    .stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 0.5px solid var(--border);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+
+    .field { margin-bottom: 10px; }
+    .field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; font-weight: 500; }
+    .field input, .field textarea {
+      width: 100%; padding: 9px 11px; font-size: 15px;
+      border: 0.5px solid var(--border2); border-radius: var(--radius);
+      background: var(--surface2); color: var(--text);
+      font-family: inherit;
+    }
+    .field textarea { resize: none; height: 64px; }
+    .field input:focus, .field textarea:focus { outline: none; border-color: var(--blue-text); }
+
+    .check-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+    .check-label input[type=checkbox] { width: 17px; height: 17px; cursor: pointer; accent-color: var(--blue-text); }
+
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 16px; border-radius: var(--radius);
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      border: 0.5px solid var(--border2);
+      background: var(--surface); color: var(--text);
+      width: 100%; margin-top: 4px; transition: background 0.15s;
+    }
+    .btn:hover { background: var(--surface2); }
+    .btn.primary { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue-border); }
+    .btn.primary:hover { filter: brightness(0.95); }
+    .btn.success { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
+    .btn.success:hover { filter: brightness(0.95); }
+
+    .send-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+
+    .worker-row { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+    .worker-row:last-child { border-bottom: none; }
+    .worker-top { display: flex; align-items: center; gap: 10px; }
+    .avatar {
+      width: 38px; height: 38px; min-width: 38px; border-radius: 50%;
+      background: var(--blue-bg); color: var(--blue-text);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+    }
+    .worker-info { flex: 1; min-width: 0; }
+    .worker-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .worker-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .worker-obs { font-size: 12px; color: var(--text3); margin-top: 5px; font-style: italic; padding-left: 48px; }
+    .new-badge {
+      font-size: 10px; background: var(--amber-bg); color: var(--amber-text);
+      padding: 2px 6px; border-radius: var(--radius); font-weight: 600; margin-left: 5px;
+    }
+
+    .check-btn {
+      width: 32px; height: 32px; min-width: 32px; border-radius: 50%;
+      border: 0.5px solid var(--border2); background: var(--surface2);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 600; transition: background 0.15s;
+    }
+    .check-btn.present { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
+    .check-btn.absent { background: var(--red-bg); border-color: var(--red-border); color: var(--red-text); }
+
+    .del-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text3); font-size: 18px; padding: 4px 6px; line-height: 1;
+    }
+    .del-btn:hover { color: var(--red-text); }
+
+    .empty { text-align: center; color: var(--text3); font-size: 13px; padding: 1.5rem 0; }
+
+    .info-note {
+      font-size: 12px; color: var(--text2);
+      background: var(--surface2); border-radius: var(--radius);
+      padding: 8px 10px; margin-top: 10px; line-height: 1.5;
+    }
+
+    .toast {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      background: var(--green-bg); color: var(--green-text);
+      border: 0.5px solid var(--green-border);
+      border-radius: var(--radius); padding: 10px 20px;
+      font-size: 13px; font-weight: 500; display: none; z-index: 999;
+      white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+    .toast.warn { background: var(--amber-bg); color: var(--amber-text); border-color: var(--amber-border); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <h1>Lista de trabajadores</h1>
+    <p>Control de asistencia diaria</p>
+    <div class="date-pill" id="date-display"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num" id="stat-total">0</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-present" style="color:var(--green-text)">0</div>
+      <div class="stat-label">Presentes</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-absent" style="color:var(--red-text)">0</div>
+      <div class="stat-label">Ausentes</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Añadir trabajador</h2>
+    <div class="field">
+      <label>Nombre completo</label>
+      <input id="inp-name" type="text" placeholder="Ej: Ana García López" />
+    </div>
+    <div class="field">
+      <label>DNI</label>
+      <input id="inp-dni" type="text" placeholder="Ej: 12345678A" maxlength="9" />
+    </div>
+    <div class="field">
+      <label>Observaciones (opcional)</label>
+      <textarea id="inp-obs" placeholder="Ej: Turno tarde, incorporación hoy..."></textarea>
+    </div>
+    <div class="field">
+      <label class="check-label">
+        <input type="checkbox" id="inp-new" /> Trabajador nuevo
+      </label>
+    </div>
+    <button class="btn primary" onclick="addWorker()">+ Añadir a la lista</button>
+  </div>
+
+  <div class="card">
+    <h2>Lista del día</h2>
+    <div id="worker-list"><div class="empty">Aún no hay trabajadores añadidos</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Enviar lista</h2>
+    <div class="field">
+      <label>Email destinatario</label>
+      <input id="inp-email" type="email" placeholder="responsable@empresa.com" />
+    </div>
+    <div class="send-grid">
+      <button class="btn success" onclick="sendEmail()">Enviar por correo</button>
+      <button class="btn" onclick="exportExcel()">Descargar Excel</button>
+    </div>
+    <div class="info-note">Al pulsar "Enviar por correo" se abrirá tu app de correo con el resumen listo. Solo tienes que darle a enviar.</div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const STORAGE_KEY = "lista_trabajadores_v1";
+  const EMAIL_KEY = "lista_email_v1";
+
+  let workers = [];
+
+  function loadData() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) workers = JSON.parse(saved);
+    } catch(e) { workers = []; }
+    try {
+      const email = localStorage.getItem(EMAIL_KEY);
+      if (email) document.getElementById("inp-email").value = email;
+    } catch(e) {}
+  }
+
+  function saveData() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(workers)); } catch(e) {}
+  }
+
+  function saveEmail() {
+    try { localStorage.setItem(EMAIL_KEY, document.getElementById("inp-email").value.trim()); } catch(e) {}
+  }
+
+  function getInitials(name) {
+    return name.split(" ").slice(0,2).map(n => n[0]).join("").toUpperCase();
+  }
+
+  function getToday() {
+    return new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  }
+
+  function getTodayShort() {
+    return new Date().toLocaleDateString("es-ES").replace(/\//g, "-");
+  }
+
+  document.getElementById("date-display").textContent = getToday();
+
+  function updateStats() {
+    const present = workers.filter(w => w.present).length;
+    document.getElementById("stat-total").textContent = workers.length;
+    document.getElementById("stat-present").textContent = present;
+    document.getElementById("stat-absent").textContent = workers.length - present;
+  }
+
+  function render() {
+    const list = document.getElementById("worker-list");
+    if (workers.length === 0) {
+      list.innerHTML = '<div class="empty">Aún no hay trabajadores añadidos</div>';
+      updateStats(); return;
+    }
+    list.innerHTML = workers.map((w, i) => `
+      <div class="worker-row">
+        <div class="worker-top">
+          <div class="avatar">${getInitials(w.name)}</div>
+          <div class="worker-info">
+            <div class="worker-name">${w.name}${w.isNew ? '<span class="new-badge">NUEVO</span>' : ""}</div>
+            <div class="worker-meta">DNI: ${w.dni}</div>
+          </div>
+          <button class="check-btn ${w.present ? "present" : "absent"}" onclick="togglePresent(${i})" title="${w.present ? "Marcar ausente" : "Marcar presente"}">
+            ${w.present ? "✓" : "✗"}
+          </button>
+          <button class="del-btn" onclick="removeWorker(${i})" title="Eliminar">✕</button>
+        </div>
+        ${w.obs ? `<div class="worker-obs">${w.obs}</div>` : ""}
+      </div>
+    `).join("");
+    updateStats();
+  }
+
+  function addWorker() {
+    const name = document.getElementById("inp-name").value.trim();
+    const dni = document.getElementById("inp-dni").value.trim().toUpperCase();
+    const obs = document.getElementById("inp-obs").value.trim();
+    const isNew = document.getElementById("inp-new").checked;
+    if (!name || !dni) { showToast("⚠ Completa el nombre y el DNI", true); return; }
+    workers.push({ name, dni, isNew, present: true, obs });
+    saveData();
+    document.getElementById("inp-name").value = "";
+    document.getElementById("inp-dni").value = "";
+    document.getElementById("inp-obs").value = "";
+    document.getElementById("inp-new").checked = false;
+    render();
+    showToast("✓ Trabajador añadido");
+  }
+
+  function togglePresent(i) {
+    workers[i].present = !workers[i].present;
+    saveData(); render();
+  }
+
+  function removeWorker(i) {
+    if (!confirm(`¿Eliminar a ${workers[i].name} de la lista?`)) return;
+    workers.splice(i, 1);
+    saveData(); render();
+  }
+
+  function exportExcel() {
+    const BOM = "\uFEFF";
+    let csv = BOM + "Nombre,DNI,Fecha,Asistencia,Nuevo trabajador,Observaciones\n";
+    workers.forEach(w => {
+      csv += `"${w.name}","${w.dni}","${getTodayShort()}","${w.present ? "Presente" : "Ausente"}","${w.isNew ? "Sí" : "No"}","${w.obs}"\n`;
+    });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `lista_trabajadores_${getTodayShort()}.csv`;
+    a.click();
+    showToast("✓ Excel descargado");
+  }
+
+  function sendEmail() {
+    const email = document.getElementById("inp-email").value.trim();
+    if (!email) { showToast("⚠ Introduce el email del destinatario", true); return; }
+    if (workers.length === 0) { showToast("⚠ La lista está vacía", true); return; }
+    saveEmail();
+
+    const fecha = getTodayShort();
+    const present = workers.filter(w => w.present);
+    const absent = workers.filter(w => !w.present);
+    const nuevos = workers.filter(w => w.isNew);
+
+    let body = `Lista de trabajadores - ${fecha}%0A%0A`;
+    body += `RESUMEN%0A`;
+    body += `Total: ${workers.length} | Presentes: ${present.length} | Ausentes: ${absent.length}%0A`;
+    if (nuevos.length > 0) body += `Nuevos trabajadores: ${nuevos.map(w => w.name).join(", ")}%0A`;
+    body += `%0ADETALLE%0A`;
+    body += `----------------------------------%0A`;
+    workers.forEach(w => {
+      body += `${w.present ? "✓" : "✗"} ${w.name} | DNI: ${w.dni}${w.isNew ? " | NUEVO" : ""}${w.obs ? ` | ${w.obs}` : ""}%0A`;
+    });
+    body += `%0APara ver el Excel completo, usa el botón "Descargar Excel" de la app.`;
+
+    const subject = encodeURIComponent(`Lista de trabajadores - ${fecha}`);
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    showToast("✓ Abriendo tu app de correo...");
+  }
+
+  function showToast(msg, warn = false) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = "toast" + (warn ? " warn" : "");
+    t.style.display = "block";
+    setTimeout(() => { t.style.display = "none"; }, 2800);
+  }
+
+  loadData();
+  render();
+</script>
+</body>
+</html>
