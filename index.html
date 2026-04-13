@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista Orbe - Control de Asistencia</title>
+    <title>Lista Orbe - Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -31,125 +31,90 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, system-ui, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
+            padding: 15px;
         }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        h1, h2, h3 { text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1, h3 { text-align: center; margin-bottom: 10px; }
 
         .card {
             background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
             margin-bottom: 20px;
         }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
 
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        input[type="text"], input[type="date"], select, textarea {
+        input, select, textarea {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid var(--border);
-            border-radius: 4px;
+            border-radius: 8px;
             box-sizing: border-box;
             background-color: var(--bg-color);
             color: var(--text-color);
         }
 
-        .radio-group, .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-top: 5px;
-        }
+        .radio-group { display: flex; gap: 10px; }
+        .radio-group label { flex: 1; text-align: center; padding: 10px; background: var(--bg-color); border-radius: 8px; cursor: pointer; border: 1px solid var(--border); }
+        .radio-group input { display: none; }
+        .radio-group input:checked + span { color: var(--primary); font-weight: bold; }
 
         button {
             width: 100%;
-            padding: 12px;
-            background-color: var(--primary);
-            color: white;
+            padding: 14px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
-            margin-top: 10px;
-        }
-
-        button:hover { background-color: var(--primary-hover); }
-        .btn-success { background-color: var(--success); }
-        .btn-success:hover { background-color: #218838; }
-
-        .stats {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .stat-box {
-            background-color: var(--card-bg);
-            padding: 15px;
-            border-radius: 8px;
-            width: 30%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             font-weight: bold;
+            transition: 0.2s;
         }
 
-        .worker-list {
-            list-style: none;
-            padding: 0;
-        }
+        .btn-main { background-color: var(--primary); color: white; margin-top: 10px; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-import { background-color: #6f42c1; color: white; margin-top: 10px; }
+        
+        .stats { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
+        .stat-box { background: var(--card-bg); padding: 10px; border-radius: 10px; flex: 1; text-align: center; font-size: 0.8em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stat-box b { font-size: 1.4em; display: block; }
 
         .worker-item {
             background-color: var(--card-bg);
             padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 5px solid var(--primary);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border-left: 6px solid var(--border);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .present { border-left-color: var(--success); }
-        .absent { border-left-color: var(--danger); }
-        
-        .project-header {
-            display: flex;
+            flex-direction: column;
             gap: 10px;
-            margin-bottom: 15px;
         }
+        .worker-item.present { border-left-color: var(--success); }
+        .worker-item.absent { border-left-color: var(--danger); }
+
+        .item-row { display: flex; justify-content: space-between; align-items: flex-start; }
         
-        .error { color: var(--danger); font-size: 0.9em; display: none; }
-        
-        /* Estilo extra para el select de la lista */
-        .status-select {
-            width: auto;
-            padding: 2px 5px;
-            font-size: 0.9em;
-            margin-left: 5px;
-            display: inline-block;
-            border-radius: 4px;
+        .btn-group-toggle { display: flex; gap: 5px; }
+        .btn-toggle {
+            padding: 8px 12px;
+            font-size: 0.8em;
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border);
         }
+        .btn-toggle.active-p { background: var(--success); color: white; border-color: var(--success); }
+        .btn-toggle.active-a { background: var(--danger); color: white; border-color: var(--danger); }
+
+        .btn-delete { background: none; color: var(--danger); width: auto; padding: 5px; font-size: 1.2em; }
+        
+        #fileInput { display: none; }
     </style>
 </head>
 <body>
@@ -158,130 +123,99 @@
     <h1>Lista Orbe</h1>
 
     <div class="card">
-        <label for="projectSelect">Seleccionar Obra/Proyecto:</label>
-        <div class="project-header">
+        <label>Obra Activa:</label>
+        <div style="display: flex; gap: 8px;">
             <select id="projectSelect" onchange="changeProject()"></select>
-            <button onclick="addProject()" style="width: auto; margin-top: 0;">+ Nueva</button>
+            <button onclick="addProject()" style="width: auto; padding: 0 15px;">+</button>
         </div>
     </div>
 
     <div class="stats">
-        <div class="stat-box">Total<br><span id="countTotal">0</span></div>
-        <div class="stat-box" style="color: var(--success);">Presentes<br><span id="countPresent">0</span></div>
-        <div class="stat-box" style="color: var(--danger);">Ausentes<br><span id="countAbsent">0</span></div>
+        <div class="stat-box">Total<br><b id="countTotal">0</b></div>
+        <div class="stat-box" style="color: var(--success);">Presentes<br><b id="countPresent">0</b></div>
+        <div class="stat-box" style="color: var(--danger);">Ausentes<br><b id="countAbsent">0</b></div>
     </div>
 
     <div class="card">
-        <h3>Añadir Trabajador</h3>
+        <h3>Nuevo Trabajador</h3>
         <form id="workerForm">
-            <div class="form-group">
-                <label for="name">Nombre completo</label>
-                <input type="text" id="name" required>
-            </div>
+            <input type="text" id="name" placeholder="Nombre completo" required class="form-group">
+            <input type="text" id="dni" placeholder="DNI (8 números + letra)" required class="form-group">
+            <input type="date" id="date" required class="form-group">
             
-            <div class="form-group">
-                <label for="dni">DNI / NIE</label>
-                <input type="text" id="dni" placeholder="Ej: 12345678Z" required>
-                <span id="dniError" class="error">Formato de DNI inválido (8 números y 1 letra)</span>
+            <div class="form-group radio-group">
+                <label><input type="radio" name="attendance" value="Presente" checked><span>Presente</span></label>
+                <label><input type="radio" name="attendance" value="Ausente"><span>Ausente</span></label>
             </div>
 
-            <div class="form-group">
-                <label for="date">Fecha de jornada</label>
-                <input type="date" id="date" required>
-            </div>
+            <textarea id="obs" placeholder="Observaciones..." rows="2" class="form-group"></textarea>
+            
+            <label style="display: flex; align-items: center; gap: 10px; font-weight: normal;">
+                <input type="checkbox" id="isNew" style="width: auto;"> ¿Es trabajador nuevo?
+            </label>
 
-            <div class="form-group">
-                <label>Asistencia</label>
-                <div class="radio-group">
-                    <label><input type="radio" name="attendance" value="Presente" checked> Presente</label>
-                    <label><input type="radio" name="attendance" value="Ausente"> Ausente</label>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="obs">Observaciones</label>
-                <textarea id="obs" rows="2"></textarea>
-            </div>
-
-            <div class="form-group checkbox-group">
-                <input type="checkbox" id="isNew">
-                <label for="isNew" style="margin: 0;">Trabajador Nuevo</label>
-            </div>
-
-            <button type="submit">Añadir a la lista</button>
+            <button type="submit" class="btn-main">Añadir a la Lista</button>
         </form>
     </div>
 
-    <button class="btn-success" onclick="exportToExcel()">Exportar a Excel (.xlsx)</button>
-    <button onclick="sendEmail()" style="background-color: #6c757d; margin-bottom: 20px;">Enviar Resumen por Correo</button>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+        <button class="btn-success" onclick="exportToExcel()">Exportar Excel</button>
+        <button class="btn-import" onclick="document.getElementById('fileInput').click()">Importar Excel</button>
+        <input type="file" id="fileInput" accept=".xlsx, .xls" onchange="importFromExcel(event)">
+    </div>
+    
+    <button onclick="sendEmail()" style="background-color: #6c757d; margin-bottom: 20px;">Enviar Resumen Email</button>
 
-    <ul class="worker-list" id="workerList"></ul>
+    <div id="workerList"></div>
 </div>
 
 <script>
-    // Inicialización de datos
     let data = JSON.parse(localStorage.getItem('orbeApp')) || {
         projects: ['Obra Principal'],
         currentProject: 'Obra Principal',
         workers: { 'Obra Principal': [] }
     };
 
-    // Validar DNI (8 números + 1 letra)
     const validateDNI = (dni) => /^\d{8}[A-Za-z]$/.test(dni);
-
-    // Inicializar UI
     document.getElementById('date').valueAsDate = new Date();
-    updateProjectSelect();
-    renderWorkers();
 
-    // Cambiar de proyecto
-    function changeProject() {
-        data.currentProject = document.getElementById('projectSelect').value;
-        saveData();
-        renderWorkers();
-    }
+    function saveData() { localStorage.setItem('orbeApp', JSON.stringify(data)); }
 
-    // Añadir nuevo proyecto
-    function addProject() {
-        const newProject = prompt("Nombre de la nueva obra:");
-        if (newProject && !data.projects.includes(newProject)) {
-            data.projects.push(newProject);
-            data.workers[newProject] = [];
-            data.currentProject = newProject;
-            saveData();
-            updateProjectSelect();
-            renderWorkers();
-        }
-    }
-
-    // Actualizar selector de proyectos
     function updateProjectSelect() {
         const select = document.getElementById('projectSelect');
         select.innerHTML = '';
         data.projects.forEach(p => {
-            const option = document.createElement('option');
-            option.value = p;
-            option.textContent = p;
-            if (p === data.currentProject) option.selected = true;
-            select.appendChild(option);
+            const opt = document.createElement('option');
+            opt.value = p; opt.textContent = p;
+            if (p === data.currentProject) opt.selected = true;
+            select.appendChild(opt);
         });
     }
 
-    // Manejar formulario
-    document.getElementById('workerForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const dniInput = document.getElementById('dni').value.trim().toUpperCase();
-        
-        if (!validateDNI(dniInput)) {
-            document.getElementById('dniError').style.display = 'block';
-            return;
+    function changeProject() {
+        data.currentProject = document.getElementById('projectSelect').value;
+        saveData(); renderWorkers();
+    }
+
+    function addProject() {
+        const name = prompt("Nombre de la obra:");
+        if (name && !data.projects.includes(name)) {
+            data.projects.push(name);
+            data.workers[name] = [];
+            data.currentProject = name;
+            saveData(); updateProjectSelect(); renderWorkers();
         }
-        document.getElementById('dniError').style.display = 'none';
+    }
+
+    document.getElementById('workerForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const dni = document.getElementById('dni').value.trim().toUpperCase();
+        if (!validateDNI(dni)) return alert("DNI incorrecto");
 
         const worker = {
             id: Date.now(),
             name: document.getElementById('name').value.trim(),
-            dni: dniInput,
+            dni,
             date: document.getElementById('date').value,
             attendance: document.querySelector('input[name="attendance"]:checked').value,
             obs: document.getElementById('obs').value.trim(),
@@ -289,119 +223,107 @@
         };
 
         data.workers[data.currentProject].push(worker);
-        saveData();
-        renderWorkers();
-        
-        // Reset form parcial (mantiene fecha)
-        document.getElementById('name').value = '';
-        document.getElementById('dni').value = '';
-        document.getElementById('obs').value = '';
-        document.getElementById('isNew').checked = false;
-        document.getElementById('name').focus();
+        saveData(); renderWorkers();
+        e.target.reset();
+        document.getElementById('date').valueAsDate = new Date();
     });
 
-    // Cambiar estado de asistencia directamente desde la lista
-    function toggleAttendance(id, newStatus) {
-        const workers = data.workers[data.currentProject];
-        const workerIndex = workers.findIndex(w => w.id === id);
-        
-        if (workerIndex !== -1) {
-            workers[workerIndex].attendance = newStatus;
-            saveData();
-            renderWorkers();
+    function setStatus(id, status) {
+        const list = data.workers[data.currentProject];
+        const idx = list.findIndex(w => w.id === id);
+        if (idx !== -1) {
+            list[idx].attendance = status;
+            saveData(); renderWorkers();
         }
     }
 
-    // Renderizar trabajadores y actualizar contadores
+    function deleteWorker(id) {
+        if (confirm("¿Eliminar?")) {
+            data.workers[data.currentProject] = data.workers[data.currentProject].filter(w => w.id !== id);
+            saveData(); renderWorkers();
+        }
+    }
+
     function renderWorkers() {
-        const list = document.getElementById('workerList');
-        list.innerHTML = '';
+        const container = document.getElementById('workerList');
+        container.innerHTML = '';
+        const workers = data.workers[data.currentProject] || [];
         
-        const currentWorkers = data.workers[data.currentProject] || [];
-        let presents = 0;
-        let absents = 0;
-
-        currentWorkers.slice().reverse().forEach(w => {
-            if (w.attendance === 'Presente') presents++;
-            else absents++;
-
-            const li = document.createElement('li');
-            li.className = `worker-item ${w.attendance === 'Presente' ? 'present' : 'absent'}`;
-            li.innerHTML = `
-                <div style="flex-grow: 1;">
-                    <strong>${w.name}</strong> (${w.dni}) ${w.isNew === 'Sí' ? '🆕' : ''}<br>
-                    <small>${w.date}</small> - 
-                    <select class="status-select" onchange="toggleAttendance(${w.id}, this.value)">
-                        <option value="Presente" ${w.attendance === 'Presente' ? 'selected' : ''}>Presente</option>
-                        <option value="Ausente" ${w.attendance === 'Ausente' ? 'selected' : ''}>Ausente</option>
-                    </select>
-                    ${w.obs ? `<br><small><i>Obs: ${w.obs}</i></small>` : ''}
+        let p = 0, a = 0;
+        workers.slice().reverse().forEach(w => {
+            if (w.attendance === 'Presente') p++; else a++;
+            
+            const div = document.createElement('div');
+            div.className = `worker-item ${w.attendance === 'Presente' ? 'present' : 'absent'}`;
+            div.innerHTML = `
+                <div class="item-row">
+                    <div>
+                        <b>${w.name}</b> <small>(${w.dni})</small> ${w.isNew === 'Sí' ? '🆕' : ''}<br>
+                        <small style="opacity: 0.7">${w.date}</small>
+                    </div>
+                    <button class="btn-delete" onclick="deleteWorker(${w.id})">×</button>
                 </div>
-                <button onclick="deleteWorker(${w.id})" style="width: auto; padding: 5px 10px; background: var(--danger); margin-top:0; margin-left: 10px;">X</button>
+                <div class="item-row">
+                    <div class="btn-group-toggle">
+                        <button class="btn-toggle ${w.attendance === 'Presente' ? 'active-p' : ''}" onclick="setStatus(${w.id}, 'Presente')">Presente</button>
+                        <button class="btn-toggle ${w.attendance === 'Ausente' ? 'active-a' : ''}" onclick="setStatus(${w.id}, 'Ausente')">Ausente</button>
+                    </div>
+                    <small><i>${w.obs}</i></small>
+                </div>
             `;
-            list.appendChild(li);
+            container.appendChild(div);
         });
 
-        document.getElementById('countTotal').textContent = currentWorkers.length;
-        document.getElementById('countPresent').textContent = presents;
-        document.getElementById('countAbsent').textContent = absents;
+        document.getElementById('countTotal').textContent = workers.length;
+        document.getElementById('countPresent').textContent = p;
+        document.getElementById('countAbsent').textContent = a;
     }
 
-    // Borrar trabajador (para corregir errores)
-    function deleteWorker(id) {
-        if(confirm("¿Eliminar este registro?")) {
-            data.workers[data.currentProject] = data.workers[data.currentProject].filter(w => w.id !== id);
-            saveData();
-            renderWorkers();
-        }
+    function importFromExcel(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const bstr = evt.target.result;
+            const wb = XLSX.read(bstr, { type: 'binary' });
+            const wsname = wb.SheetNames[0];
+            const ws = wb.Sheets[wsname];
+            const json = XLSX.utils.sheet_to_json(ws);
+
+            json.forEach(row => {
+                data.workers[data.currentProject].push({
+                    id: Date.now() + Math.random(),
+                    name: row["Nombre"] || "Sin nombre",
+                    dni: row["DNI"] || "00000000X",
+                    date: row["Fecha"] || document.getElementById('date').value,
+                    attendance: row["Asistencia"] || "Presente",
+                    isNew: row["Nuevo Trabajador"] || "No",
+                    obs: row["Observaciones"] || ""
+                });
+            });
+            saveData(); renderWorkers();
+            alert("Importado con éxito");
+        };
+        reader.readAsBinaryString(file);
     }
 
-    // Guardar en localStorage
-    function saveData() {
-        localStorage.setItem('orbeApp', JSON.stringify(data));
-    }
-
-    // Exportar a Excel real (.xlsx)
     function exportToExcel() {
-        const currentWorkers = data.workers[data.currentProject] || [];
-        if (currentWorkers.length === 0) return alert("No hay datos para exportar.");
-
-        const exportData = currentWorkers.map(w => ({
-            "Nombre": w.name,
-            "DNI": w.dni,
-            "Fecha": w.date,
-            "Asistencia": w.attendance,
-            "Nuevo Trabajador": w.isNew,
-            "Observaciones": w.obs
-        }));
-
-        const ws = XLSX.utils.json_to_sheet(exportData);
+        const ws = XLSX.utils.json_to_sheet(data.workers[data.currentProject].map(w => ({
+            "Nombre": w.name, "DNI": w.dni, "Fecha": w.date, "Asistencia": w.attendance, "Nuevo Trabajador": w.isNew, "Observaciones": w.obs
+        })));
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
-        
-        const filename = `Asistencia_${data.currentProject.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
-        XLSX.writeFile(wb, filename);
+        XLSX.writeFile(wb, `Asistencia_${data.currentProject}.xlsx`);
     }
 
-    // Enviar correo de resumen
     function sendEmail() {
-        const currentWorkers = data.workers[data.currentProject] || [];
-        const presents = currentWorkers.filter(w => w.attendance === 'Presente').length;
-        const absents = currentWorkers.length - presents;
-        const dateStr = document.getElementById('date').value;
-
-        const subject = encodeURIComponent(`Resumen de Asistencia - ${data.currentProject} - ${dateStr}`);
-        let body = `Resumen de Asistencia para la obra: ${data.currentProject}\nFecha: ${dateStr}\n\n`;
-        body += `Total Trabajadores: ${currentWorkers.length}\nPresentes: ${presents}\nAusentes: ${absents}\n\n`;
-        body += `--- DETALLE ---\n`;
-        
-        currentWorkers.forEach(w => {
-            body += `- ${w.name} (${w.dni}): ${w.attendance} ${w.isNew === 'Sí' ? '[NUEVO]' : ''}\n`;
-        });
-
-        window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
+        const workers = data.workers[data.currentProject];
+        let body = `Resumen ${data.currentProject}\n\n`;
+        workers.forEach(w => body += `- ${w.name} (${w.dni}): ${w.attendance}\n`);
+        window.location.href = `mailto:?subject=Asistencia&body=${encodeURIComponent(body)}`;
     }
-</script>
 
+    updateProjectSelect();
+    renderWorkers();
+</script>
 </body>
 </html>
