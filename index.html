@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista Orbe - Pro</title>
+    <title>Lista Orbe - Control de Asistencia</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -140,7 +140,7 @@
         <h3>Nuevo Trabajador</h3>
         <form id="workerForm">
             <input type="text" id="name" placeholder="Nombre completo" required class="form-group">
-            <input type="text" id="dni" placeholder="DNI (8 números + letra)" required class="form-group">
+            <input type="text" id="dni" placeholder="DNI / NIE" required class="form-group">
             <input type="date" id="date" required class="form-group">
             
             <div class="form-group radio-group">
@@ -176,7 +176,7 @@
         workers: { 'Obra Principal': [] }
     };
 
-    const validateDNI = (dni) => /^\d{8}[A-Za-z]$/.test(dni);
+    // Validación eliminada para permitir cualquier formato de DNI/NIE
     document.getElementById('date').valueAsDate = new Date();
 
     function saveData() { localStorage.setItem('orbeApp', JSON.stringify(data)); }
@@ -210,12 +210,11 @@
     document.getElementById('workerForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const dni = document.getElementById('dni').value.trim().toUpperCase();
-        if (!validateDNI(dni)) return alert("DNI incorrecto");
 
         const worker = {
             id: Date.now(),
             name: document.getElementById('name').value.trim(),
-            dni,
+            dni: dni,
             date: document.getElementById('date').value,
             attendance: document.querySelector('input[name="attendance"]:checked').value,
             obs: document.getElementById('obs').value.trim(),
@@ -293,7 +292,7 @@
                 data.workers[data.currentProject].push({
                     id: Date.now() + Math.random(),
                     name: row["Nombre"] || "Sin nombre",
-                    dni: row["DNI"] || "00000000X",
+                    dni: row["DNI"] || row["DNI/NIE"] || "00000000X",
                     date: row["Fecha"] || document.getElementById('date').value,
                     attendance: row["Asistencia"] || "Presente",
                     isNew: row["Nuevo Trabajador"] || "No",
@@ -308,7 +307,7 @@
 
     function exportToExcel() {
         const ws = XLSX.utils.json_to_sheet(data.workers[data.currentProject].map(w => ({
-            "Nombre": w.name, "DNI": w.dni, "Fecha": w.date, "Asistencia": w.attendance, "Nuevo Trabajador": w.isNew, "Observaciones": w.obs
+            "Nombre": w.name, "DNI/NIE": w.dni, "Fecha": w.date, "Asistencia": w.attendance, "Nuevo Trabajador": w.isNew, "Observaciones": w.obs
         })));
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
