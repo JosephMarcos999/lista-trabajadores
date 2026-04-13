@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lista de Trabajadores</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f3; --surface: #ffffff; --surface2: #f0efeb;
+      --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+      --text: #1a1a18; --text2: #6b6b67; --text3: #9e9e9a;
+      --blue-bg: #e6f1fb; --blue-text: #0c447c; --blue-border: rgba(24,95,165,0.35);
+      --green-bg: #eaf3de; --green-text: #3b6d11; --green-border: rgba(57,109,17,0.35);
+      --red-bg: #fcebeb; --red-text: #a32d2d; --red-border: rgba(163,45,45,0.35);
+      --amber-bg: #faeeda; --amber-text: #854f0b; --amber-border: rgba(133,79,11,0.35);
+      --radius: 8px; --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a; --surface: #242422; --surface2: #2e2e2b;
+        --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+        --text: #f0efe8; --text2: #a0a09a; --text3: #666660;
+        --blue-bg: #042c53; --blue-text: #b5d4f4; --blue-border: rgba(55,138,221,0.35);
+        --green-bg: #173404; --green-text: #c0dd97; --green-border: rgba(99,153,34,0.35);
+        --red-bg: #501313; --red-text: #f7c1c1; --red-border: rgba(226,75,74,0.35);
+        --amber-bg: #412402; --amber-text: #fac775; --amber-border: rgba(239,159,39,0.35);
+      }
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 3rem; }
+    .app { max-width: 500px; margin: 0 auto; padding: 1rem; }
+
+    .header { background: var(--surface2); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; border: 0.5px solid var(--border); }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header p { font-size: 13px; color: var(--text2); margin-top: 3px; }
+
+    .project-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; }
+    .project-select { flex: 1; padding: 9px 11px; font-size: 14px; font-weight: 500; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--surface); color: var(--text); font-family: inherit; cursor: pointer; }
+    .project-select:focus { outline: none; border-color: var(--blue-text); }
+    .icon-btn { width: 38px; height: 38px; min-width: 38px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .icon-btn:hover { background: var(--surface2); }
+    .icon-btn.danger:hover { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border-radius: var(--radius-lg); border: 0.5px solid var(--border2); padding: 1.25rem; width: 100%; max-width: 360px; }
+    .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .modal-btns { display: flex; gap: 8px; margin-top: 12px; }
+
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
+    .stat { background: var(--surface2); border-radius: var(--radius); padding: 10px; text-align: center; }
+    .stat-num { font-size: 24px; font-weight: 600; }
+    .stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+    .card { background: var(--surface); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+
+    .field { margin-bottom: 10px; }
+    .field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; font-weight: 500; }
+    .field input, .field textarea { width: 100%; padding: 9px 11px; font-size: 15px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--surface2); color: var(--text); font-family: inherit; }
+    .field textarea { resize: none; height: 64px; }
+    .field input:focus, .field textarea:focus { outline: none; border-color: var(--blue-text); }
+    .field input.error { border-color: var(--red-text); }
+    .field .hint { font-size: 11px; color: var(--text3); margin-top: 3px; }
+    .field .hint.err { color: var(--red-text); }
+
+    .check-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+    .check-label input[type=checkbox] { width: 17px; height: 17px; cursor: pointer; accent-color: var(--blue-text); }
+
+    .btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); width: 100%; margin-top: 4px; transition: background 0.15s; font-family: inherit; }
+    .btn:hover { background: var(--surface2); }
+    .btn.primary { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue-border); }
+    .btn.success { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
+    .btn.sm { padding: 7px 12px; font-size: 13px; margin-top: 0; }
+    .send-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+
+    .worker-row { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+    .worker-row:last-child { border-bottom: none; }
+    .worker-top { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 38px; height: 38px; min-width: 38px; border-radius: 50%; background: var(--blue-bg); color: var(--blue-text); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+    .worker-info { flex: 1; min-width: 0; }
+    .worker-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .worker-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .worker-obs { font-size: 12px; color: var(--text3); margin-top: 5px; font-style: italic; padding-left: 48px; }
+    .new-badge { font-size: 10px; background: var(--amber-bg); color: var(--amber-text); padding: 2px 6px; border-radius: var(--radius); font-weight: 600; margin-left: 5px; }
+    .check-btn { width: 32px; height: 32px; min-width: 32px; border-radius: 50%; border: 0.5px solid var(--border2); background: var(--surface2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; }
+    .check-btn.present { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
+    .check-btn.absent { background: var(--red-bg); border-color: var(--red-border); color: var(--red-text); }
+    .del-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 18px; padding: 4px 6px; line-height: 1; }
+    .del-btn:hover { color: var(--red-text); }
+    .empty { text-align: center; color: var(--text3); font-size: 13px; padding: 1.5rem 0; }
+    .info-note { font-size: 12px; color: var(--text2); background: var(--surface2); border-radius: var(--radius); padding: 8px 10px; margin-top: 10px; line-height: 1.5; }
+
+    .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--green-bg); color: var(--green-text); border: 0.5px solid var(--green-border); border-radius: var(--radius); padding: 10px 20px; font-size: 13px; font-weight: 500; display: none; z-index: 999; white-space: nowrap; }
+    .toast.warn { background: var(--amber-bg); color: var(--amber-text); border-color: var(--amber-border); }
+    .toast.err { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <h1>Lista de trabajadores</h1>
+    <p>Control de asistencia por obra o proyecto</p>
+  </div>
+
+  <div class="project-bar">
+    <select class="project-select" id="project-select" onchange="switchProject()"></select>
+    <button class="icon-btn" onclick="openNewProject()" title="Nueva obra">＋</button>
+    <button class="icon-btn danger" onclick="deleteProject()" title="Eliminar obra">🗑</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total</div></div>
+    <div class="stat"><div class="stat-num" id="stat-present" style="color:var(--green-text)">0</div><div class="stat-label">Presentes</div></div>
+    <div class="stat"><div class="stat-num" id="stat-absent" style="color:var(--red-text)">0</div><div class="stat-label">Ausentes</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Añadir trabajador</h2>
+    <div class="field">
+      <label>Nombre completo</label>
+      <input id="inp-name" type="text" placeholder="Ej: Ana García López" />
+    </div>
+    <div class="field">
+      <label>DNI</label>
+      <input id="inp-dni" type="text" placeholder="Ej: 12345678Z" maxlength="9" oninput="formatDNI(this)" />
+      <div class="hint" id="dni-hint">8 números seguidos de una letra</div>
+    </div>
+    <div class="field">
+      <label>Fecha de la jornada</label>
+      <input id="inp-date" type="date" />
+    </div>
+    <div class="field">
+      <label>Observaciones (opcional)</label>
+      <textarea id="inp-obs" placeholder="Ej: Turno tarde, incorporación hoy..."></textarea>
+    </div>
+    <div class="field">
+      <label class="check-label">
+        <input type="checkbox" id="inp-new" /> Trabajador nuevo
+      </label>
+    </div>
+    <button class="btn primary" onclick="addWorker()">+ Añadir a la lista</button>
+  </div>
+
+  <div class="card">
+    <h2 id="list-title">Lista de trabajadores</h2>
+    <div id="worker-list"><div class="empty">Crea una obra primero pulsando ＋</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Enviar lista</h2>
+    <div class="field">
+      <label>Email destinatario</label>
+      <input id="inp-email" type="email" placeholder="responsable@empresa.com" />
+    </div>
+    <div class="send-grid">
+      <button class="btn success" onclick="sendEmail()">Enviar por correo</button>
+      <button class="btn" onclick="exportExcel()">Descargar Excel</button>
+    </div>
+    <div class="info-note">Al pulsar "Enviar por correo" se abrirá tu app de correo con el resumen listo. El Excel se descarga por separado para adjuntarlo.</div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="modal-new">
+  <div class="modal">
+    <h3>Nueva obra o proyecto</h3>
+    <div class="field">
+      <label>Nombre de la obra</label>
+      <input id="modal-name" type="text" placeholder="Ej: Obra Centro, Proyecto Norte..." />
+    </div>
+    <div class="modal-btns">
+      <button class="btn sm primary" onclick="createProject()" style="flex:1">Crear</button>
+      <button class="btn sm" onclick="closeModal()" style="flex:1">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = "obras_v2";
+const EMAIL_KEY = "lista_email_v1";
+let data = {};
+let currentProject = null;
+
+function todayISO() { return new Date().toISOString().split("T")[0]; }
+function formatDateES(iso) { if (!iso) return ""; const [y,m,d] = iso.split("-"); return `${d}/${m}/${y}`; }
+
+function load() {
+  try { data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { data = {}; }
+  try { const e = localStorage.getItem(EMAIL_KEY); if (e) document.getElementById("inp-email").value = e; } catch(e) {}
+  document.getElementById("inp-date").value = todayISO();
+}
+
+function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {} }
+
+function getWorkers() { return currentProject && data[currentProject] ? data[currentProject].workers : []; }
+
+function renderProjectSelector() {
+  const sel = document.getElementById("project-select");
+  const projects = Object.keys(data);
+  sel.innerHTML = "";
+  if (projects.length === 0) {
+    sel.innerHTML = '<option value="">— Sin obras creadas —</option>';
+    currentProject = null; return;
+  }
+  projects.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p; opt.textContent = p;
+    if (p === currentProject) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  if (!currentProject || !data[currentProject]) currentProject = projects[0];
+  sel.value = currentProject;
+}
+
+function switchProject() { currentProject = document.getElementById("project-select").value; renderAll(); }
+
+function openNewProject() {
+  document.getElementById("modal-name").value = "";
+  document.getElementById("modal-new").classList.add("open");
+  setTimeout(() => document.getElementById("modal-name").focus(), 100);
+}
+
+function closeModal() { document.getElementById("modal-new").classList.remove("open"); }
+
+function createProject() {
+  const name = document.getElementById("modal-name").value.trim();
+  if (!name) { showToast("⚠ Escribe un nombre", "warn"); return; }
+  if (data[name]) { showToast("⚠ Ya existe esa obra", "warn"); return; }
+  data[name] = { workers: [] };
+  currentProject = name;
+  save(); closeModal(); renderAll();
+  showToast("✓ Obra creada: " + name);
+}
+
+function deleteProject() {
+  if (!currentProject) return;
+  if (!confirm(`¿Eliminar la obra "${currentProject}" y todos sus trabajadores?`)) return;
+  delete data[currentProject];
+  currentProject = null;
+  save(); renderProjectSelector(); renderAll();
+  showToast("Obra eliminada");
+}
+
+function getInitials(name) { return name.split(" ").slice(0,2).map(n => n[0]).join("").toUpperCase(); }
+
+function validateDNI(dni) { return /^\d{8}[A-Za-z]$/.test(dni); }
+
+function formatDNI(input) {
+  let val = input.value.toUpperCase().replace(/[^0-9A-Z]/g, "");
+  if (val.length > 9) val = val.slice(0, 9);
+  input.value = val;
+  const hint = document.getElementById("dni-hint");
+  if (val.length === 0) { hint.textContent = "8 números seguidos de una letra"; hint.className = "hint"; input.classList.remove("error"); }
+  else if (validateDNI(val)) { hint.textContent = "✓ Formato correcto"; hint.className = "hint"; input.classList.remove("error"); }
+  else { hint.textContent = "Formato: 8 números + 1 letra (ej: 12345678Z)"; hint.className = "hint err"; input.classList.add("error"); }
+}
+
+function updateStats() {
+  const workers = getWorkers();
+  const present = workers.filter(w => w.present).length;
+  document.getElementById("stat-total").textContent = workers.length;
+  document.getElementById("stat-present").textContent = present;
+  document.getElementById("stat-absent").textContent = workers.length - present;
+}
+
+function renderWorkers() {
+  const workers = getWorkers();
+  const list = document.getElementById("worker-list");
+  document.getElementById("list-title").textContent = currentProject ? `Lista — ${currentProject}` : "Lista de trabajadores";
+  if (!currentProject) { list.innerHTML = '<div class="empty">Crea una obra primero pulsando ＋</div>'; updateStats(); return; }
+  if (workers.length === 0) { list.innerHTML = '<div class="empty">Aún no hay trabajadores en esta obra</div>'; updateStats(); return; }
+  list.innerHTML = workers.map((w, i) => `
+    <div class="worker-row">
+      <div class="worker-top">
+        <div class="avatar">${getInitials(w.name)}</div>
+        <div class="worker-info">
+          <div class="worker-name">${w.name}${w.isNew ? '<span class="new-badge">NUEVO</span>' : ""}</div>
+          <div class="worker-meta">DNI: ${w.dni} · ${formatDateES(w.date)}</div>
+        </div>
+        <button class="check-btn ${w.present ? "present" : "absent"}" onclick="togglePresent(${i})">
+          ${w.present ? "✓" : "✗"}
+        </button>
+        <button class="del-btn" onclick="removeWorker(${i})">✕</button>
+      </div>
+      ${w.obs ? `<div class="worker-obs">${w.obs}</div>` : ""}
+    </div>
+  `).join("");
+  updateStats();
+}
+
+function renderAll() { renderProjectSelector(); renderWorkers(); }
+
+function addWorker() {
+  if (!currentProject) { showToast("⚠ Crea una obra primero", "warn"); return; }
+  const name = document.getElementById("inp-name").value.trim();
+  const dni = document.getElementById("inp-dni").value.trim().toUpperCase();
+  const date = document.getElementById("inp-date").value;
+  const obs = document.getElementById("inp-obs").value.trim();
+  const isNew = document.getElementById("inp-new").checked;
+  if (!name) { showToast("⚠ Escribe el nombre del trabajador", "warn"); return; }
+  if (!validateDNI(dni)) { showToast("⚠ DNI incorrecto: 8 números + 1 letra (ej: 12345678Z)", "err"); return; }
+  if (!date) { showToast("⚠ Selecciona una fecha", "warn"); return; }
+  data[currentProject].workers.push({ name, dni, date, isNew, present: true, obs });
+  save();
+  document.getElementById("inp-name").value = "";
+  document.getElementById("inp-dni").value = "";
+  document.getElementById("inp-date").value = todayISO();
+  document.getElementById("inp-obs").value = "";
+  document.getElementById("inp-new").checked = false;
+  document.getElementById("dni-hint").textContent = "8 números seguidos de una letra";
+  document.getElementById("dni-hint").className = "hint";
+  document.getElementById("inp-dni").classList.remove("error");
+  renderWorkers();
+  showToast("✓ Trabajador añadido");
+}
+
+function togglePresent(i) { data[currentProject].workers[i].present = !data[currentProject].workers[i].present; save(); renderWorkers(); }
+
+function removeWorker(i) {
+  if (!confirm(`¿Eliminar a ${data[currentProject].workers[i].name}?`)) return;
+  data[currentProject].workers.splice(i, 1);
+  save(); renderWorkers();
+}
+
+function exportExcel() {
+  if (!currentProject) { showToast("⚠ Selecciona una obra", "warn"); return; }
+  const workers = getWorkers();
+  if (workers.length === 0) { showToast("⚠ La lista está vacía", "warn"); return; }
+  const headers = ["Nombre", "DNI", "Fecha", "Asistencia", "Nuevo trabajador", "Observaciones"];
+  const rows = workers.map(w => [w.name, w.dni, formatDateES(w.date), w.present ? "Presente" : "Ausente", w.isNew ? "Sí" : "No", w.obs || ""]);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  ws["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 30 }];
+  XLSX.utils.book_append_sheet(wb, ws, currentProject.slice(0, 31));
+  XLSX.writeFile(wb, `${currentProject}_${todayISO()}.xlsx`);
+  showToast("✓ Excel descargado");
+}
+
+function sendEmail() {
+  const email = document.getElementById("inp-email").value.trim();
+  if (!email) { showToast("⚠ Introduce el email del destinatario", "warn"); return; }
+  if (!currentProject) { showToast("⚠ Selecciona una obra", "warn"); return; }
+  const workers = getWorkers();
+  if (workers.length === 0) { showToast("⚠ La lista está vacía", "warn"); return; }
+  try { localStorage.setItem(EMAIL_KEY, email); } catch(e) {}
+  const present = workers.filter(w => w.present);
+  const absent = workers.filter(w => !w.present);
+  const nuevos = workers.filter(w => w.isNew);
+  let body = `Lista de trabajadores - ${currentProject}%0AFecha: ${formatDateES(todayISO())}%0A%0ARESUMEN%0ATotal: ${workers.length} | Presentes: ${present.length} | Ausentes: ${absent.length}%0A`;
+  if (nuevos.length > 0) body += `Nuevos: ${nuevos.map(w => w.name).join(", ")}%0A`;
+  body += `%0ADETALLE%0A----------------------------------%0A`;
+  workers.forEach(w => { body += `${w.present ? "✓" : "✗"} ${w.name} | DNI: ${w.dni} | ${formatDateES(w.date)}${w.isNew ? " | NUEVO" : ""}${w.obs ? ` | ${w.obs}` : ""}%0A`; });
+  body += `%0AAdjunta el Excel descargado desde la app para el detalle completo.`;
+  window.location.href = `mailto:${email}?subject=${encodeURIComponent(`Lista trabajadores - ${currentProject} - ${formatDateES(todayISO())}`)}&body=${body}`;
+  showToast("✓ Abriendo tu app de correo...");
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast" + (type ? ` ${type}` : "");
+  t.style.display = "block";
+  setTimeout(() => { t.style.display = "none"; }, 2800);
+}
+
+document.getElementById("modal-new").addEventListener("click", e => { if (e.target.id === "modal-new") closeModal(); });
+document.getElementById("modal-name").addEventListener("keydown", e => { if (e.key === "Enter") createProject(); });
+
+load();
+renderAll();
+</script>
+</body>
+</html>
