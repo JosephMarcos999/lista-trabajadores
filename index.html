@@ -16,7 +16,7 @@
             --danger: #dc3545; 
             --border: #ccc; 
         } 
- 
+
         @media (prefers-color-scheme: dark) { 
             :root { 
                 --bg-color: #121212; 
@@ -29,7 +29,7 @@
                 --border: #333; 
             } 
         } 
- 
+
         body { 
             font-family: -apple-system, system-ui, sans-serif; 
             background-color: var(--bg-color); 
@@ -37,10 +37,10 @@
             margin: 0; 
             padding: 15px; 
         } 
- 
+
         .container { max-width: 600px; margin: 0 auto; } 
         h1, h3 { text-align: center; margin-bottom: 10px; } 
- 
+
         .card { 
             background-color: var(--card-bg); 
             padding: 15px; 
@@ -48,10 +48,10 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
             margin-bottom: 20px; 
         } 
- 
+
         .form-group { margin-bottom: 12px; } 
         label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; } 
- 
+
         input, select, textarea { 
             width: 100%; 
             padding: 12px; 
@@ -61,12 +61,12 @@
             background-color: var(--bg-color); 
             color: var(--text-color); 
         } 
- 
+
         .radio-group { display: flex; gap: 10px; } 
         .radio-group label { flex: 1; text-align: center; padding: 10px; background: var(--bg-color); border-radius: 8px; cursor: pointer; border: 1px solid var(--border); } 
         .radio-group input { display: none; } 
         .radio-group input:checked + span { color: var(--primary); font-weight: bold; } 
- 
+
         button { 
             width: 100%; 
             padding: 14px; 
@@ -77,15 +77,15 @@
             font-weight: bold; 
             transition: 0.2s; 
         } 
- 
+
         .btn-main { background-color: var(--primary); color: white; margin-top: 10px; } 
         .btn-success { background-color: var(--success); color: white; } 
         .btn-import { background-color: #6f42c1; color: white; margin-top: 10px; } 
-         
+          
         .stats { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; } 
         .stat-box { background: var(--card-bg); padding: 10px; border-radius: 10px; flex: 1; text-align: center; font-size: 0.8em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); } 
         .stat-box b { font-size: 1.4em; display: block; } 
- 
+
         .worker-item { 
             background-color: var(--card-bg); 
             padding: 15px; 
@@ -98,9 +98,9 @@
         } 
         .worker-item.present { border-left-color: var(--success); } 
         .worker-item.absent { border-left-color: var(--danger); } 
- 
+
         .item-row { display: flex; justify-content: space-between; align-items: flex-start; } 
-         
+          
         .btn-group-toggle { display: flex; gap: 5px; } 
         .btn-toggle { 
             padding: 8px 12px; 
@@ -111,9 +111,9 @@
         } 
         .btn-toggle.active-p { background: var(--success); color: white; border-color: var(--success); } 
         .btn-toggle.active-a { background: var(--danger); color: white; border-color: var(--danger); } 
- 
+
         .btn-delete { background: none; color: var(--danger); width: auto; padding: 5px; font-size: 1.2em; } 
-         
+          
         #fileInput { display: none; } 
     </style> 
 </head> 
@@ -148,13 +148,13 @@
                 <label><input type="radio" name="attendance" value="Presente" checked><span>Presente</span></label> 
                 <label><input type="radio" name="attendance" value="Ausente"><span>Ausente</span></label> 
             </div> 
- 
+
             <textarea id="obs" placeholder="Observaciones..." rows="2" class="form-group"></textarea> 
              
             <label style="display: flex; align-items: center; gap: 10px; font-weight: normal;"> 
                 <input type="checkbox" id="isNew" style="width: auto;"> ¿Es trabajador nuevo? 
             </label> 
- 
+
             <button type="submit" class="btn-main">Añadir a la Lista</button> 
         </form> 
     </div> 
@@ -177,7 +177,6 @@
         workers: { 'Obra Principal': [] } 
     }; 
  
-    // Validación eliminada para permitir cualquier formato de DNI/NIE 
     document.getElementById('date').valueAsDate = new Date(); 
  
     function saveData() { localStorage.setItem('orbeApp', JSON.stringify(data)); } 
@@ -248,11 +247,11 @@
         const container = document.getElementById('workerList'); 
         container.innerHTML = ''; 
         const workers = data.workers[data.currentProject] || []; 
-         
+          
         let p = 0, a = 0; 
         workers.slice().reverse().forEach(w => { 
             if (w.attendance === 'Presente') p++; else a++; 
-             
+              
             const div = document.createElement('div'); 
             div.className = `worker-item ${w.attendance === 'Presente' ? 'present' : 'absent'}`; 
             div.innerHTML = ` 
@@ -281,6 +280,7 @@
  
     function importFromExcel(e) { 
         const file = e.target.files[0]; 
+        if (!file) return;
         const reader = new FileReader(); 
         reader.onload = (evt) => { 
             const bstr = evt.target.result; 
@@ -293,7 +293,7 @@
                 data.workers[data.currentProject].push({ 
                     id: Date.now() + Math.random(), 
                     name: row["Nombre"] || "Sin nombre", 
-                    dni: row["DNI"] || row["DNI/NIE"] || "00000000X", 
+                    dni: row["DNI"] || row["DNI/NIE"] || "S/N", 
                     date: row["Fecha"] || document.getElementById('date').value, 
                     attendance: row["Asistencia"] || "Presente", 
                     isNew: row["Nuevo Trabajador"] || "No", 
@@ -307,12 +307,50 @@
     } 
  
     function exportToExcel() { 
-        const ws = XLSX.utils.json_to_sheet(data.workers[data.currentProject].map(w => ({ 
-            "Nombre": w.name, "DNI/NIE": w.dni, "Fecha": w.date, "Asistencia": w.attendance, "Nuevo Trabajador": w.isNew, "Observaciones": w.obs 
+        const currentWorkers = data.workers[data.currentProject];
+        if (!currentWorkers || currentWorkers.length === 0) {
+            alert("No hay datos para exportar");
+            return;
+        }
+
+        const ws = XLSX.utils.json_to_sheet(currentWorkers.map(w => ({ 
+            "Nombre": w.name, 
+            "DNI/NIE": w.dni, 
+            "Fecha": w.date, 
+            "Asistencia": w.attendance, 
+            "Nuevo Trabajador": w.isNew, 
+            "Observaciones": w.obs 
         }))); 
+
         const wb = XLSX.utils.book_new(); 
         XLSX.utils.book_append_sheet(wb, ws, "Asistencia"); 
-        XLSX.writeFile(wb, `Asistencia_${data.currentProject}.xlsx`); 
+        
+        // Generar el archivo en formato binario
+        const wbout = XLSX.write(wb, {bookType:'xlsx', type: 'binary'});
+
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i=0; i<s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        }
+
+        // Crear un Blob y forzar la descarga mediante un enlace invisible
+        const fileName = `Asistencia_${data.currentProject.replace(/ /g, "_")}.xlsx`;
+        const blob = new Blob([s2ab(wbout)], {type:"application/octet-stream"});
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Limpiar
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 100);
     } 
  
     function sendEmail() { 
