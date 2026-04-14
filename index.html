@@ -37,7 +37,7 @@
 <div class="container" id="mainApp"> 
     <h1>Panel Obra</h1>
     <div class="card">
-        <select id="projectSelect" onchange="loadWorkers()"></select>
+        <select id="projectSelect" onchange="l    oadWorkers()"></select>
         <button onclick="addProject()" style="margin-top:5px; background: #eee;">+ Nueva Obra</button>
     </div>
 
@@ -162,40 +162,70 @@
     }
 
     // 5. ENVÍO A POWER AUTOMATE (OneDrive)
-    async function exportAndSend() {
-        const obra = document.getElementById('projectSelect').value;
-        const btn = document.getElementById('btnExport');
-        if (!obra) return alert("Selecciona una obra");
+async function exportAndSend() {
+    const obra = document.getElementById('projectSelect').value;
+    const btn = document.getElementById('btnExport');
+    if (!obra) return alert("Selecciona una obra primero");
 
-        btn.disabled = true;
-        btn.innerText = "SINCRONIZANDO...";
+    btn.disabled = true;
+    btn.innerText = "BUSCANDO EXCEL...";
 
-        try {
-            const snap = await db.collection('obras').doc(obra).collection('personal').get();
-            let listaNuevos = [];
-            let docsIds = [];
+    try {
+        const snap = await db.collection('obras').doc(obra).collection('personal').get();
+        let listaNuevos = [];
+        let docsIds = [];
 
-            snap.forEach(doc => {
-                const w = doc.data();
-                if (w.sincronizado !== true) {
-                    listaNuevos.push({
-                        fecha: w.fecha || new Date().toLocaleDateString('es-ES'),
-                        obra: obra,
-                        nombre: w.name,
-                        dni: w.dni,
-                        asistencia: w.asistencia,
-                        archivoExcel: `${obra}.xlsx`
-                    });
-                    docsIds.push(doc.id);
-                }
-            });
-
-            if (listaNuevos.length === 0) {
-                alert("No hay cambios nuevos para sincronizar.");
-                btn.disabled = false;
-                btn.innerText = "SINCRONIZAR CON ONEDRIVE";
-                return;
+        snap.forEach(doc => {
+            const w = doc.data();
+            if (w.sincronizado !== true) {
+                listaNuevos.push({
+                    fecha: w.fecha || new Date().toLocaleDateString('es-ES'),
+                    obra: obra,
+                    nombre: w.name,
+                    dni: w.dni,
+                    asistencia: w.asistencia,
+                    // IMPORTANTE: El nombre del archivo debe ser igual al de la obra
+                    archivoExcel: `${obra}.xlsx` 
+                });
+                docsIds.push(doc.id);
             }
+        });
+
+        if (listaNuevos.length === 0) {
+            alert("No hay datos nuevos. El Excel de " + obra + " ya está al día.");
+            btn.disabled = false;
+            btn.innerText = "SINCRONIZAR CON ONEDRIVE";
+            return;
+        }
+
+        const webhookURL = "TU_URL_DE_POWER_AUTOMATE_AQUI";
+
+        const response = await fetch(webhookURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(listaNuevos)
+        });
+
+        if (response.ok) {
+            // Marcamos como sincronizados para que no se repitan mañana
+            const batch = db.batch();
+            docsIds.forEach(id => {
+                const ref = db.collection('obras').doc(obra).collection('personal').doc(id);
+                batch.update(ref, { sincronizado: true });
+            });
+            await batch.commit();
+            alert("✅ Sincronización completada en: " + obra + ".xlsx");
+            loadWorkers();
+        } else {
+            alert("❌ Power Automate no encontró el archivo. ¿Has creado " + obra + ".xlsx en OneDrive?");
+        }
+    } catch (error) {
+        alert("❌ Error de conexión.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "SINCRONIZAR CON ONEDRIVE";
+    }
+}
 
             // PEGA AQUÍ TU URL DE POWER AUTOMATE
             const webhookURL = "https://default2630e7be8e644fb1b8bab51dbd63ae.72.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/502f9413daff41109d74422980cc42f7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=fdQGV2qsKWxFzTCi_F3wzwupbYecJGSYff0UhGuzdVQ";
