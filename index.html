@@ -3,60 +3,70 @@
 <head> 
     <meta charset="UTF-8"> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>Orbe Cloud - Panel Realtime</title> 
+    <title>Orbe Cloud - Sistema de Partes Mensuales</title> 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> 
     <style> 
-        :root { --bg: #f0f2f5; --primary: #0078d4; --card: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; } 
+        :root { --bg: #f0f2f5; --primary: #0078d4; --card: #ffffff; --success: #107c10; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 15px; } 
         .container { max-width: 500px; margin: 0 auto; display: none; }
-        #loginScreen { max-width: 350px; margin: 80px auto; text-align: center; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #loginScreen { max-width: 350px; margin: 80px auto; text-align: center; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); } 
-        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        h1, h2 { color: #333; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; margin-bottom: 5px; }
+        button:active { transform: scale(0.98); }
         button:disabled { background: #ccc !important; cursor: not-allowed; }
         .btn-main { background: var(--primary); color: white; }
-        .btn-send { background: #107c10; color: white; }
-        .worker-item { background: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; display: flex; justify-content: space-between; align-items: center; }
-        .sync-badge { font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
+        .btn-send { background: var(--success); color: white; font-size: 16px; box-shadow: 0 4px 10px rgba(16,124,16,0.3); }
+        .worker-item { background: white; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; display: flex; justify-content: space-between; align-items: center; }
+        .sync-badge { font-size: 10px; padding: 3px 6px; border-radius: 4px; margin-left: 5px; text-transform: uppercase; font-weight: bold; }
         .sync-true { background: #e1f5fe; color: #0288d1; }
         .sync-false { background: #fff3e0; color: #f57c00; }
+        .info-tag { font-size: 12px; color: #666; margin-bottom: 10px; display: block; }
     </style>
 </head> 
 <body> 
 
 <div id="loginScreen">
-    <h2>Acceso Orbe Cloud</h2>
+    <h2>Orbe Cloud</h2>
+    <p>Control de Asistencia Realtime</p>
     <input type="email" id="emailInput" placeholder="Email de responsable">
     <input type="password" id="passInput" placeholder="Contraseña">
-    <button class="btn-main" onclick="handleLogin()">Entrar</button>
+    <button class="btn-main" onclick="handleLogin()">Entrar al Panel</button>
 </div>
 
 <div class="container" id="mainApp"> 
-    <h1>Panel Obra</h1>
+    <h1>Panel de Obra</h1>
+    
     <div class="card">
+        <label class="info-tag">Seleccionar Obra Activa:</label>
         <select id="projectSelect" onchange="loadWorkers()"></select>
-        <button onclick="addProject()" style="margin-top:5px; background: #eee;">+ Nueva Obra</button>
+        <button onclick="addProject()" style="background: #e9ecef; color: #444; font-size: 13px;">+ Crear Nueva Obra</button>
     </div>
 
-    <button id="btnExport" class="btn-send" onclick="exportAndSend()">SINCRONIZAR CON ONEDRIVE</button>
+    <div class="card" style="background: #f8f9fa; border: 1px dashed #0078d4;">
+        <p style="font-size: 13px; margin-top: 0;"><b>Acción Final:</b> Generar parte diario en Excel mensual.</p>
+        <button id="btnExport" class="btn-send" onclick="exportAndSend()">SINCRONIZAR ASISTENCIA</button>
+    </div>
 
-    <div class="card" style="margin-top: 20px;">
+    <div class="card">
+        <h3 style="margin-top:0">Registrar Personal</h3>
         <form id="workerForm">
             <input type="text" id="wName" placeholder="Nombre completo" required>
-            <input type="text" id="wDni" placeholder="DNI">
-            <button type="submit" class="btn-main">Registrar en Nube</button>
+            <input type="text" id="wDni" placeholder="DNI / NIE">
+            <button type="submit" class="btn-main">Añadir a la lista</button>
         </form>
     </div>
 
     <div id="workerList"></div>
-    <button onclick="firebase.auth().signOut()" style="background: none; color: red; margin-top: 20px;">Cerrar Sesión</button>
+    
+    <button onclick="firebase.auth().signOut()" style="background: none; color: #888; margin-top: 30px; font-size: 12px; text-decoration: underline;">Cerrar Sesión</button>
 </div>
 
 <script>
-    // 1. CONFIGURACIÓN FIREBASE
+    // 1. CONFIGURACIÓN FIREBASE (Reemplaza con tus credenciales si cambian)
     const firebaseConfig = {
         apiKey: "AIzaSyDWyZlRgjF2vM6AcrFE9882UTzvNhLVWEA",
         authDomain: "orbeasistencia-497bb.firebaseapp.com",
@@ -85,8 +95,11 @@
     async function handleLogin() {
         const email = document.getElementById('emailInput').value;
         const pass = document.getElementById('passInput').value;
-        try { await auth.signInWithEmailAndPassword(email, pass); } 
-        catch (e) { alert("Error de acceso"); }
+        try { 
+            await auth.signInWithEmailAndPassword(email, pass); 
+        } catch (e) { 
+            alert("Error de acceso: " + e.message); 
+        }
     }
 
     // 3. LÓGICA DE PROYECTOS
@@ -94,6 +107,10 @@
         const snap = await db.collection('obras').get();
         const select = document.getElementById('projectSelect');
         select.innerHTML = '';
+        if(snap.empty) {
+            select.innerHTML = '<option value="">No hay obras creadas</option>';
+            return;
+        }
         snap.forEach(doc => {
             select.innerHTML += `<option value="${doc.id}">${doc.id}</option>`;
         });
@@ -101,9 +118,10 @@
     }
 
     async function addProject() {
-        const name = prompt("Nombre obra:");
+        const name = prompt("Nombre de la nueva obra:");
         if (name) {
-            await db.collection('obras').doc(name).set({ creado: new Date() });
+            const cleanName = name.trim().replace(/\s+/g, '_'); // Evitamos espacios
+            await db.collection('obras').doc(cleanName).set({ creado: new Date() });
             loadProjects();
         }
     }
@@ -112,11 +130,12 @@
     document.getElementById('workerForm').onsubmit = async (e) => {
         e.preventDefault();
         const obra = document.getElementById('projectSelect').value;
+        if(!obra) return alert("Crea una obra primero");
+
         await db.collection('obras').doc(obra).collection('personal').add({
             name: document.getElementById('wName').value,
             dni: document.getElementById('wDni').value,
             asistencia: 'Presente',
-            fecha: new Date().toLocaleDateString('es-ES'),
             sincronizado: false 
         });
         document.getElementById('workerForm').reset();
@@ -127,29 +146,29 @@
         const obra = document.getElementById('projectSelect').value;
         const container = document.getElementById('workerList');
         if(!obra) return;
-        container.innerHTML = 'Cargando personal...';
+
+        container.innerHTML = '<p style="text-align:center">Cargando personal...</p>';
         const snap = await db.collection('obras').doc(obra).collection('personal').get();
         container.innerHTML = '';
+
         snap.forEach(doc => {
             const w = doc.data();
-            const syncLabel = w.sincronizado ? '<span class="sync-badge sync-true">Nube OK</span>' : '<span class="sync-badge sync-false">Pendiente</span>';
+            const syncLabel = w.sincronizado ? 
+                '<span class="sync-badge sync-true">Sincronizado</span>' : 
+                '<span class="sync-badge sync-false">Pendiente</span>';
+            
             container.innerHTML += `
                 <div class="worker-item" style="border-left-color: ${w.asistencia === 'Presente' ? '#28a745' : '#dc3545'}">
-                    <div style="flex-grow:1"><b>${w.name}</b> ${syncLabel}<br><small>${w.dni}</small></div>
+                    <div style="flex-grow:1">
+                        <b>${w.name}</b> ${syncLabel}<br>
+                        <small style="color:#666">${w.dni || 'Sin DNI'}</small>
+                    </div>
                     <div style="display:flex; gap:5px">
-                        <button style="padding:8px; width:auto" onclick="toggleAsis('${doc.id}', '${w.asistencia}')">${w.asistencia}</button>
+                        <button style="padding:8px 12px; width:auto; background:#eee; font-size:12px" onclick="toggleAsis('${doc.id}', '${w.asistencia}')">${w.asistencia}</button>
                         <button style="padding:8px; width:auto; background:#ff4d4d; color:white" onclick="deleteWorker('${doc.id}')">🗑️</button>
                     </div>
                 </div>`;
         });
-    }
-
-    async function deleteWorker(id) {
-        const obra = document.getElementById('projectSelect').value;
-        if(confirm("¿Borrar este trabajador?")) {
-            await db.collection('obras').doc(obra).collection('personal').doc(id).delete();
-            loadWorkers();
-        }
     }
 
     async function toggleAsis(id, actual) {
@@ -161,42 +180,62 @@
         loadWorkers();
     }
 
-    // 5. ENVÍO A POWER AUTOMATE (HISTORIAL DIARIO)
+    async function deleteWorker(id) {
+        const obra = document.getElementById('projectSelect').value;
+        if(confirm("¿Eliminar trabajador de esta lista?")) {
+            await db.collection('obras').doc(obra).collection('personal').doc(id).delete();
+            loadWorkers();
+        }
+    }
+
+    // 5. ENVÍO A POWER AUTOMATE (LÓGICA MULTI-HOJA Y MULTI-EXCEL)
     async function exportAndSend() {
         const obra = document.getElementById('projectSelect').value;
         const btn = document.getElementById('btnExport');
         if (!obra) return alert("Selecciona una obra primero");
 
         btn.disabled = true;
-        btn.innerText = "SINCRO EN CURSO...";
+        btn.innerText = "PROCESANDO ARCHIVOS...";
 
         try {
             const snap = await db.collection('obras').doc(obra).collection('personal').get();
             let listaPersonal = [];
             let docsIds = [];
-            const fechaHoy = new Date().toLocaleDateString('es-ES');
+            
+            // --- CÁLCULO DE FECHAS PARA ORGANIZACIÓN ---
+            const ahora = new Date();
+            const dia = ahora.getDate().toString().padStart(2, '0');
+            const mes = (ahora.getMonth() + 1).toString().padStart(2, '0');
+            const año = ahora.getFullYear();
+            
+            // Nombre del archivo: Ej: "Obra_Norte_04_2026.xlsx"
+            const nombreArchivo = `${obra}_${mes}_${año}.xlsx`;
+            // Nombre de la hoja: Ej: "Dia_14"
+            const nombreHoja = `Dia_${dia}`;
+            const fechaCompleta = `${dia}/${mes}/${año}`;
 
             snap.forEach(doc => {
                 const w = doc.data();
                 listaPersonal.push({
-                    fecha: fechaHoy, 
+                    fecha: fechaCompleta, 
                     obra: obra,
                     nombre: w.name,
                     dni: w.dni,
                     asistencia: w.asistencia,
-                    archivoExcel: `${obra}.xlsx`
+                    archivoExcel: nombreArchivo, // Power Automate usará esto para buscar el Excel del mes
+                    hojaExcel: nombreHoja       // Power Automate usará esto para la pestaña del día
                 });
                 docsIds.push(doc.id);
             });
 
             if (listaPersonal.length === 0) {
-                alert("No hay trabajadores registrados en " + obra);
+                alert("No hay trabajadores en la lista.");
                 btn.disabled = false;
-                btn.innerText = "SINCRONIZAR CON ONEDRIVE";
+                btn.innerText = "SINCRONIZAR ASISTENCIA";
                 return;
             }
 
-            // URL ORIGINAL DE TU WEBHOOK
+            // URL del Webhook de tu flujo de Power Automate
             const webhookURL = "https://default2630e7be8e644fb1b8bab51dbd63ae.72.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/502f9413daff41109d74422980cc42f7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=fdQGV2qsKWxFzTCi_F3wzwupbYecJGSYff0UhGuzdVQ";
 
             const response = await fetch(webhookURL, {
@@ -206,23 +245,25 @@
             });
 
             if (response.ok) {
+                // Marcar como sincronizados en Firebase
                 const batch = db.batch();
                 docsIds.forEach(id => {
                     const ref = db.collection('obras').doc(obra).collection('personal').doc(id);
                     batch.update(ref, { sincronizado: true });
                 });
                 await batch.commit();
-                alert(`✅ ¡Éxito! Parte de hoy enviado al Excel de ${obra}`);
+                
+                alert(`✅ PARTE ENVIADO\nArchivo: ${nombreArchivo}\nHoja: ${nombreHoja}`);
                 loadWorkers();
             } else {
-                alert("❌ Error de servidor: Comprueba que el archivo " + obra + ".xlsx existe en OneDrive.");
+                alert("❌ Error en Power Automate. Verifica que el archivo existe en OneDrive.");
             }
         } catch (error) {
             console.error(error);
-            alert("❌ Error de conexión.");
+            alert("❌ Error de red o configuración.");
         } finally {
             btn.disabled = false;
-            btn.innerText = "SINCRONIZAR CON ONEDRIVE";
+            btn.innerText = "SINCRONIZAR ASISTENCIA";
         }
     }
 </script> 
