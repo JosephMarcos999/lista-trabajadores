@@ -20,6 +20,9 @@
         .btn-main { background: var(--primary); color: white; }
         .btn-send { background: #107c10; color: white; }
         .worker-item { background: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; display: flex; justify-content: space-between; align-items: center; }
+        .sync-badge { font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
+        .sync-true { background: #e1f5fe; color: #0288d1; }
+        .sync-false { background: #fff3e0; color: #f57c00; }
     </style>
 </head> 
 <body> 
@@ -53,7 +56,7 @@
 </div>
 
 <script>
-    // 1. CONFIGURACIÓN FIREBASE
+    // 1. CONFIGURACIÓN FIREBASE (Tus claves originales)
     const firebaseConfig = {
         apiKey: "AIzaSyDWyZlRgjF2vM6AcrFE9882UTzvNhLVWEA",
         authDomain: "orbeasistencia-497bb.firebaseapp.com",
@@ -86,7 +89,7 @@
         catch (e) { alert("Error de acceso"); }
     }
 
-    // 3. LÓGICA DE BASE DE DATOS
+    // 3. LÓGICA DE PROYECTOS
     async function loadProjects() {
         const snap = await db.collection('obras').get();
         const select = document.getElementById('projectSelect');
@@ -105,6 +108,7 @@
         }
     }
 
+    // 4. LÓGICA DE PERSONAL (Añadir, Cargar, Borrar)
     document.getElementById('workerForm').onsubmit = async (e) => {
         e.preventDefault();
         const obra = document.getElementById('projectSelect').value;
@@ -112,7 +116,8 @@
             name: document.getElementById('wName').value,
             dni: document.getElementById('wDni').value,
             asistencia: 'Presente',
-            fecha: new Date().toLocaleDateString('es-ES')
+            fecha: new Date().toLocaleDateString('es-ES'),
+            sincronizado: false // Importante para el control de duplicados
         });
         document.getElementById('workerForm').reset();
         loadWorkers();
@@ -127,77 +132,96 @@
         container.innerHTML = '';
         snap.forEach(doc => {
             const w = doc.data();
+            const syncLabel = w.sincronizado ? '<span class="sync-badge sync-true">Nube OK</span>' : '<span class="sync-badge sync-false">Pendiente</span>';
             container.innerHTML += `
                 <div class="worker-item" style="border-left-color: ${w.asistencia === 'Presente' ? '#28a745' : '#dc3545'}">
-                    <div><b>${w.name}</b><br><small>${w.dni}</small></div>
-                    <button onclick="toggleAsis('${doc.id}', '${w.asistencia}')">${w.asistencia}</button>
+                    <div style="flex-grow:1"><b>${w.name}</b> ${syncLabel}<br><small>${w.dni}</small></div>
+                    <div style="display:flex; gap:5px">
+                        <button style="padding:8px; width:auto" onclick="toggleAsis('${doc.id}', '${w.asistencia}')">${w.asistencia}</button>
+                        <button style="padding:8px; width:auto; background:#ff4d4d; color:white" onclick="deleteWorker('${doc.id}')">🗑️</button>
+                    </div>
                 </div>`;
         });
+    }
+
+    async function deleteWorker(id) {
+        const obra = document.getElementById('projectSelect').value;
+        if(confirm("¿Borrar este trabajador?")) {
+            await db.collection('obras').doc(obra).collection('personal').doc(id).delete();
+            loadWorkers();
+        }
     }
 
     async function toggleAsis(id, actual) {
         const obra = document.getElementById('projectSelect').value;
         await db.collection('obras').doc(obra).collection('personal').doc(id).update({
-            asistencia: actual === 'Presente' ? 'Ausente' : 'Presente'
+            asistencia: actual === 'Presente' ? 'Ausente' : 'Presente',
+            sincronizado: false // Si cambiamos la asistencia, hay que volver a sincronizar
         });
         loadWorkers();
     }
 
-    // --- FUNCIÓN CLAVE: ENVÍO A POWER AUTOMATE / ONEDRIVE ---
+    // 5. ENVÍO A POWER AUTOMATE (OneDrive)
     async function exportAndSend() {
         const obra = document.getElementById('projectSelect').value;
         const btn = document.getElementById('btnExport');
-        
-        if (!obra) return alert("Selecciona una obra primero");
+        if (!obra) return alert("Selecciona una obra");
 
-        // Bloqueamos el botón para evitar doble clic
         btn.disabled = true;
-        btn.innerText = "ENVIANDO DATOS...";
+        btn.innerText = "SINCRONIZANDO...";
 
         try {
-            // 1. Obtener datos de Firestore
             const snap = await db.collection('obras').doc(obra).collection('personal').get();
-            let listaTrabajadores = [];
-            
+            let listaNuevos = [];
+            let docsIds = [];
+
             snap.forEach(doc => {
                 const w = doc.data();
-                listaTrabajadores.push({
-                    fecha: w.fecha || new Date().toLocaleDateString('es-ES'),
-                    obra: obra,
-                    nombre: w.name,
-                    dni: w.dni,
-                    asistencia: w.asistencia
-                });
+                if (w.sincronizado !== true) {
+                    listaNuevos.push({
+                        fecha: w.fecha || new Date().toLocaleDateString('es-ES'),
+                        obra: obra,
+                        nombre: w.name,
+                        dni: w.dni,
+                        asistencia: w.asistencia,
+                        archivoExcel: `${obra}.xlsx`
+                    });
+                    docsIds.push(doc.id);
+                }
             });
 
-            if (listaTrabajadores.length === 0) {
-                alert("No hay trabajadores registrados en esta obra.");
+            if (listaNuevos.length === 0) {
+                alert("No hay cambios nuevos para sincronizar.");
                 btn.disabled = false;
                 btn.innerText = "SINCRONIZAR CON ONEDRIVE";
                 return;
             }
 
-            // 2. ENVIAR A POWER AUTOMATE
-            // PEGA TU URL DE POWER AUTOMATE AQUÍ ABAJO:
+            // PEGA AQUÍ TU URL DE POWER AUTOMATE
             const webhookURL = "https://default2630e7be8e644fb1b8bab51dbd63ae.72.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/502f9413daff41109d74422980cc42f7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=fdQGV2qsKWxFzTCi_F3wzwupbYecJGSYff0UhGuzdVQ";
 
             const response = await fetch(webhookURL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(listaTrabajadores)
+                body: JSON.stringify(listaNuevos)
             });
 
             if (response.ok) {
-                alert("✅ Éxito: El Excel en OneDrive ha sido actualizado.");
+                const batch = db.batch();
+                docsIds.forEach(id => {
+                    const ref = db.collection('obras').doc(obra).collection('personal').doc(id);
+                    batch.update(ref, { sincronizado: true });
+                });
+                await batch.commit();
+                alert("✅ Excel actualizado correctamente.");
+                loadWorkers();
             } else {
-                throw new Error("Error en el servidor de Microsoft");
+                alert("❌ Error en la sincronización.");
             }
-
         } catch (error) {
-            console.error("Error detallado:", error);
-            alert("❌ Error al sincronizar. Asegúrate de que la URL de Power Automate sea correcta.");
+            console.error(error);
+            alert("❌ Error de conexión.");
         } finally {
-            // Reestablecer botón
             btn.disabled = false;
             btn.innerText = "SINCRONIZAR CON ONEDRIVE";
         }
