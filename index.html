@@ -175,21 +175,20 @@ async function exportAndSend() {
         let listaNuevos = [];
         let docsIds = [];
 
-        snap.forEach(doc => {
-            const w = doc.data();
-            if (w.sincronizado !== true) {
-                listaNuevos.push({
-                    fecha: w.fecha || new Date().toLocaleDateString('es-ES'),
-                    obra: obra,
-                    nombre: w.name,
-                    dni: w.dni,
-                    asistencia: w.asistencia,
-                    // IMPORTANTE: El nombre del archivo debe ser igual al de la obra
-                    archivoExcel: `${obra}.xlsx` 
-                });
-                docsIds.push(doc.id);
-            }
-        });
+   // Buscamos a TODOS los trabajadores de la obra seleccionada
+snap.forEach(doc => {
+    const w = doc.data();
+    // Ya no filtramos por "sincronizado", enviamos todo el parte del día
+    listaNuevos.push({
+        fecha: new Date().toLocaleDateString('es-ES'), // Fecha de hoy
+        obra: obra,
+        nombre: w.name,
+        dni: w.dni,
+        asistencia: w.asistencia,
+        archivoExcel: `${obra}.xlsx`
+    });
+    docsIds.push(doc.id);
+});
 
         if (listaNuevos.length === 0) {
             alert("No hay datos nuevos. El Excel de " + obra + " ya está al día.");
