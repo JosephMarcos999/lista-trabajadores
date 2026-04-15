@@ -241,7 +241,7 @@
             const response = await fetch(webhookURL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(listaPersonal)https://default2630e7be8e644fb1b8bab51dbd63ae.72.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/4d0032197bb349a4b3457877f2629755/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vqZahjC5HmwxnHfN7sC2s7Bovpy8jFfKHL5rZDc9bxM
+                body: JSON.stringify(listaPersonal)
             if (response.ok) {
                 // Marcar como sincronizados en Firebase
                 const batch = db.batch();
