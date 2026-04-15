@@ -189,61 +189,49 @@
     }
 
     // 5. ENVÍO A POWER AUTOMATE (LÓGICA MULTI-HOJA Y MULTI-EXCEL)
-    async function exportAndSend() {
+   async function exportAndSend() {
         const obra = document.getElementById('projectSelect').value;
         const btn = document.getElementById('btnExport');
         if (!obra) return alert("Selecciona una obra primero");
 
         btn.disabled = true;
-        btn.innerText = "PROCESANDO ARCHIVOS...";
+        btn.innerText = "PROCESANDO...";
 
         try {
             const snap = await db.collection('obras').doc(obra).collection('personal').get();
             let listaPersonal = [];
             let docsIds = [];
             
-            // --- CÁLCULO DE FECHAS PARA ORGANIZACIÓN ---
             const ahora = new Date();
-            const dia = ahora.getDate().toString().padStart(2, '0');
-            const mes = (ahora.getMonth() + 1).toString().padStart(2, '0');
-            const año = ahora.getFullYear();
-            
-            // Nombre del archivo: Ej: "Obra_Norte_04_2026.xlsx"
-            const nombreArchivo = `${obra}_${mes}_${año}.xlsx`;
-            // Nombre de la hoja: Ej: "Dia_14"
-            const nombreHoja = `Dia_${dia}`;
-            const fechaCompleta = `${dia}/${mes}/${año}`;
+            const fechaCompleta = `${ahora.getDate().toString().padStart(2, '0')}/${(ahora.getMonth() + 1).toString().padStart(2, '0')}/${ahora.getFullYear()}`;
 
             snap.forEach(doc => {
                 const w = doc.data();
+                // Solo enviamos los datos básicos que Excel necesita
                 listaPersonal.push({
                     fecha: fechaCompleta, 
                     obra: obra,
                     nombre: w.name,
                     dni: w.dni,
-                    asistencia: w.asistencia,
-                    archivoExcel: nombreArchivo, // Power Automate usará esto para buscar el Excel del mes
-                    hojaExcel: nombreHoja       // Power Automate usará esto para la pestaña del día
+                    asistencia: w.asistencia
                 });
                 docsIds.push(doc.id);
             });
 
             if (listaPersonal.length === 0) {
                 alert("No hay trabajadores en la lista.");
-                btn.disabled = false;
-                btn.innerText = "SINCRONIZAR ASISTENCIA";
                 return;
             }
 
-            // URL del Webhook de tu flujo de Power Automate
-            const webhookURL = "https://default2630e7be8e644fb1b8bab51dbd63ae.72.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/4d0032197bb349a4b3457877f2629755/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vqZahjC5HmwxnHfN7sC2s7Bovpy8jFfKHL5rZDc9bxM";
+            const webhookURL = "TU_URL_DE_POWER_AUTOMATE_AQUI"; // REVISA QUE SEA LA MISMA
 
             const response = await fetch(webhookURL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(listaPersonal)
+            });
+
             if (response.ok) {
-                // Marcar como sincronizados en Firebase
                 const batch = db.batch();
                 docsIds.forEach(id => {
                     const ref = db.collection('obras').doc(obra).collection('personal').doc(id);
@@ -251,14 +239,14 @@
                 });
                 await batch.commit();
                 
-                alert(`✅ PARTE ENVIADO\nArchivo: ${nombreArchivo}\nHoja: ${nombreHoja}`);
+                alert(`✅ ASISTENCIA SINCRONIZADA CORRECTAMENTE`);
                 loadWorkers();
             } else {
-                alert("❌ Error en Power Automate. Verifica que el archivo existe en OneDrive.");
+                alert("❌ Error en Power Automate. Revisa el historial de flujo.");
             }
         } catch (error) {
             console.error(error);
-            alert("❌ Error de red o configuración.");
+            alert("❌ Error de conexión.");
         } finally {
             btn.disabled = false;
             btn.innerText = "SINCRONIZAR ASISTENCIA";
