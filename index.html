@@ -66,7 +66,7 @@
 </div>
 
 <script>
-    // 1. CONFIGURACIÓN FIREBASE (Reemplaza con tus credenciales si cambian)
+    // 1. CONFIGURACIÓN FIREBASE
     const firebaseConfig = {
         apiKey: "AIzaSyDWyZlRgjF2vM6AcrFE9882UTzvNhLVWEA",
         authDomain: "orbeasistencia-497bb.firebaseapp.com",
@@ -120,7 +120,7 @@
     async function addProject() {
         const name = prompt("Nombre de la nueva obra:");
         if (name) {
-            const cleanName = name.trim().replace(/\s+/g, '_'); // Evitamos espacios
+            const cleanName = name.trim().replace(/\s+/g, '_');
             await db.collection('obras').doc(cleanName).set({ creado: new Date() });
             loadProjects();
         }
@@ -188,8 +188,8 @@
         }
     }
 
-    // 5. ENVÍO A POWER AUTOMATE (LÓGICA MULTI-HOJA Y MULTI-EXCEL)
-   async function exportAndSend() {
+    // 5. ENVÍO A POWER AUTOMATE
+    async function exportAndSend() {
         const obra = document.getElementById('projectSelect').value;
         const btn = document.getElementById('btnExport');
         if (!obra) return alert("Selecciona una obra primero");
@@ -207,23 +207,25 @@
 
             snap.forEach(doc => {
                 const w = doc.data();
-                // Solo enviamos los datos básicos que Excel necesita
                 listaPersonal.push({
-                    fecha: fechaCompleta, 
-                    obra: obra,
-                    nombre: w.name,
-                    dni: w.dni,
-                    asistencia: w.asistencia
+                    Fecha: fechaCompleta, 
+                    Obra: obra,
+                    Nombre: w.name,
+                    DNI: w.dni || "N/A",
+                    Asistencia: w.asistencia
                 });
                 docsIds.push(doc.id);
             });
 
             if (listaPersonal.length === 0) {
                 alert("No hay trabajadores en la lista.");
+                btn.disabled = false;
+                btn.innerText = "SINCRONIZAR ASISTENCIA";
                 return;
             }
 
-            const webhookURL = "https://default2630e7be8e644fb1b8bab51dbd63ae.72.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/bd2c1e9ec51d4c6db8b30a2ac08e4458/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=KWevG8S2uawzyfMX_d0NXC5IUfv_4OoLOKPZBMqqpNU"; // REVISA QUE SEA LA MISMA
+            // URL proporcionada por el usuario
+            const webhookURL = "https://default2630e7be8e644fb1b8bab51dbd63ae.72.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/bd2c1e9ec51d4c6db8b30a2ac08e4458/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=KWevG8S2uawzyfMX_d0NXC5IUfv_4OoLOKPZBMqqpNU";
 
             const response = await fetch(webhookURL, {
                 method: 'POST',
@@ -239,7 +241,7 @@
                 });
                 await batch.commit();
                 
-                alert(`✅ ASISTENCIA SINCRONIZADA CORRECTAMENTE`);
+                alert(`✅ ASISTENCIA SINCRONIZADA CORRECTAMENTE EN EXCEL`);
                 loadWorkers();
             } else {
                 alert("❌ Error en Power Automate. Revisa el historial de flujo.");
